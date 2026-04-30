@@ -1,0 +1,89 @@
+# ================================
+# DÉPENDANCES
+# ================================
+node_modules/
+.pnp
+.pnp.js
+
+# ================================
+# NUXT 3 (Frontend)
+# ================================
+.nuxt/
+.output/
+.nitro/
+.cache/
+dist/
+
+# ================================
+# ADONISJS (Backend)
+# ================================
+build/
+tmp/
+*.db
+
+# ================================
+# ENVIRONNEMENT & SECRETS
+# ================================
+.env
+.env.*
+!.env.example
+
+# ================================
+# LOGS
+# ================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ================================
+# SYSTÈMES D'EXPLOITATION
+# ================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ================================
+# ÉDITEURS & IDE
+# ================================
+
+# VS Code (conserver les paramètres partagés si besoin)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# JetBrains (IntelliJ, WebStorm...)
+.idea/
+*.iml
+*.iws
+
+# Vim / Neovim
+*.swp
+*.swo
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+
+# ================================
+# TESTS & COUVERTURE
+# ================================
+coverage/
+.nyc_output/
+
+# ================================
+# DOCKER (volumes locaux)
+# ================================
+postgres_data/
