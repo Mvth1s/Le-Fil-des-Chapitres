@@ -1,0 +1,597 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#FAF8F4;--brown:#3D3B2F;--gray:#8B8B7A;--olive:#8B9B6A;--blue:#8FAEC5;--rose:#C89BA5;--beige:#D4C4A0;--gold:#C9A96E;
+  --olive-light:#EEF2E6;--blue-light:#EAF1F7;--rose-light:#F5EDEE;--beige-light:#F5F0E6;
+}
+body{font-family:'Playfair Display',serif;background:transparent}
+.wrap{width:100%;max-width:760px;margin:0 auto;padding:8px 0 16px}
+.nav-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:10px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.tab-btn{font-family:'Playfair Display',serif;font-size:11px;padding:5px 9px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;transition:all .15s}
+.tab-btn:hover{background:var(--color-background-secondary)}
+.tab-btn.active{background:#3D3B2F;color:#FAF8F4;border-color:#3D3B2F}
+.page{display:none;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Shared UI elements */
+.mockup-frame{background:#FAF8F4;border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);overflow:hidden;font-family:'Playfair Display',serif;color:#3D3B2F}
+.topbar{background:#FAF8F4;border-bottom:0.5px solid #E0D9CF;padding:10px 18px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Dancing Script',cursive;font-size:20px;color:#3D3B2F;font-weight:700}
+.logo span{color:#C9A96E}
+.topnav{display:flex;gap:4px}
+.topnav a{font-size:11px;color:#8B8B7A;padding:4px 8px;border-radius:6px;text-decoration:none}
+.topnav a.active{color:#3D3B2F;background:#EEF2E6}
+.page-body{padding:18px}
+.page-title{font-family:'Dancing Script',cursive;font-size:26px;color:#3D3B2F;margin-bottom:4px}
+.page-subtitle{font-size:12px;color:#8B8B7A;margin-bottom:16px}
+
+/* Cards */
+.webtoon-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.wcard{background:#fff;border:0.5px solid #E0D9CF;border-radius:10px;overflow:hidden}
+.wcard-cover{height:90px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.wcard-info{padding:7px 8px}
+.wcard-title{font-size:11px;font-weight:600;color:#3D3B2F;margin-bottom:2px;line-height:1.3}
+.wcard-author{font-size:10px;color:#8B8B7A;margin-bottom:5px}
+.badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:20px;font-style:italic}
+.badge-reading{background:#EEF2E6;color:#5A7040}
+.badge-done{background:#EAF1F7;color:#3D6A8A}
+.badge-paused{background:#F5F0E6;color:#8A6A30}
+.badge-plan{background:#F5EDEE;color:#8A4A5A}
+
+/* Progress bar */
+.prog-wrap{margin-top:4px}
+.prog-bar{height:3px;background:#E0D9CF;border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:#C9A96E;border-radius:2px}
+.prog-label{font-size:9px;color:#8B8B7A;margin-top:2px}
+
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat-card{background:#fff;border:0.5px solid #E0D9CF;border-radius:8px;padding:10px;text-align:center}
+.stat-num{font-family:'Dancing Script',cursive;font-size:22px;color:#3D3B2F;line-height:1}
+.stat-label{font-size:10px;color:#8B8B7A;margin-top:2px}
+
+/* Search bar */
+.search-row{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+.search-input{flex:1;border:0.5px solid #E0D9CF;border-radius:8px;padding:7px 12px;font-family:'Playfair Display',serif;font-size:12px;color:#3D3B2F;background:#fff}
+.filter-btn{border:0.5px solid #E0D9CF;border-radius:8px;padding:7px 12px;font-size:11px;background:#fff;color:#8B8B7A;cursor:pointer}
+
+/* Form */
+.form-group{margin-bottom:12px}
+.form-label{font-size:11px;color:#8B8B7A;margin-bottom:4px;display:block}
+.form-input{width:100%;border:0.5px solid #E0D9CF;border-radius:8px;padding:8px 12px;font-family:'Playfair Display',serif;font-size:12px;color:#3D3B2F;background:#fff}
+.form-textarea{width:100%;border:0.5px solid #E0D9CF;border-radius:8px;padding:8px 12px;font-family:'Playfair Display',serif;font-size:12px;color:#3D3B2F;background:#fff;height:60px;resize:none}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-primary{background:#3D3B2F;color:#FAF8F4;border:none;border-radius:8px;padding:9px 18px;font-family:'Playfair Display',serif;font-size:12px;cursor:pointer}
+.btn-secondary{background:#fff;color:#3D3B2F;border:0.5px solid #E0D9CF;border-radius:8px;padding:9px 18px;font-family:'Playfair Display',serif;font-size:12px;cursor:pointer}
+.genres-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.genre-tag{border:0.5px solid #C9A96E;border-radius:20px;padding:3px 10px;font-size:10px;color:#C9A96E;cursor:pointer}
+.genre-tag.sel{background:#C9A96E;color:#fff}
+
+/* Fiche webtoon */
+.fiche-header{display:grid;grid-template-columns:80px 1fr;gap:14px;margin-bottom:14px}
+.fiche-cover{height:110px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:36px}
+.fiche-meta{display:flex;flex-direction:column;justify-content:center;gap:6px}
+.fiche-title{font-family:'Dancing Script',cursive;font-size:20px;color:#3D3B2F}
+.fiche-author{font-size:12px;color:#8B8B7A}
+.fiche-genres{display:flex;flex-wrap:wrap;gap:4px}
+.fiche-desc{font-size:11px;color:#8B8B7A;line-height:1.6;margin-bottom:12px}
+.action-row{display:flex;gap:8px}
+.btn-gold{background:#C9A96E;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:'Playfair Display',serif;font-size:11px;cursor:pointer}
+
+/* Liste table */
+.list-table{width:100%;border-collapse:collapse;font-size:11px}
+.list-table th{text-align:left;color:#8B8B7A;font-weight:400;padding:6px 8px;border-bottom:0.5px solid #E0D9CF;font-style:italic}
+.list-table td{padding:8px 8px;border-bottom:0.5px solid #F0EBE3;color:#3D3B2F;vertical-align:middle}
+.plus-btn{width:22px;height:22px;border-radius:50%;border:0.5px solid #C9A96E;background:transparent;color:#C9A96E;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+
+/* Stats page */
+.chart-section{margin-bottom:14px}
+.chart-label{font-size:11px;color:#8B8B7A;margin-bottom:8px;font-style:italic}
+.bar-chart{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:flex;align-items:center;gap:8px}
+.bar-name{font-size:10px;color:#3D3B2F;width:70px;flex-shrink:0}
+.bar-track{flex:1;height:14px;background:#F0EBE3;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px}
+.bar-val{font-size:10px;color:#8B8B7A;width:28px;text-align:right}
+.donut-wrap{display:flex;gap:16px;align-items:center}
+.legend{display:flex;flex-direction:column;gap:5px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:10px;color:#3D3B2F}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.top5-list{display:flex;flex-direction:column;gap:6px}
+.top5-item{display:flex;align-items:center;gap:10px;background:#fff;border:0.5px solid #E0D9CF;border-radius:8px;padding:7px 10px}
+.top5-rank{font-family:'Dancing Script',cursive;font-size:16px;color:#C9A96E;width:18px}
+.top5-info{flex:1}
+.top5-title{font-size:11px;font-weight:600;color:#3D3B2F}
+.top5-stars{font-size:10px;color:#C9A96E}
+.section-title{font-size:13px;font-weight:600;color:#3D3B2F;margin-bottom:8px;padding-bottom:4px;border-bottom:0.5px solid #E0D9CF}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+</style>
+
+<div class="wrap">
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="showPage('dashboard')">Accueil</button>
+    <button class="tab-btn" onclick="showPage('catalogue')">Catalogue</button>
+    <button class="tab-btn" onclick="showPage('ajouter')">Ajouter un webtoon</button>
+    <button class="tab-btn" onclick="showPage('fiche')">Fiche webtoon</button>
+    <button class="tab-btn" onclick="showPage('modifier')">Modifier</button>
+    <button class="tab-btn" onclick="showPage('liste')">Ma liste</button>
+    <button class="tab-btn" onclick="showPage('stats')">Statistiques</button>
+  </div>
+
+  <!-- PAGE 1 : DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="mockup-frame">
+      <div class="topbar">
+        <div class="logo">Le Fil <span>des Chapitres</span></div>
+        <div class="topnav">
+          <a href="#" class="active">Accueil</a>
+          <a href="#">Catalogue</a>
+          <a href="#">Ma liste</a>
+          <a href="#">Statistiques</a>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="page-title">Bonjour, Mathis ✦</div>
+        <div class="page-subtitle">Voici un aperçu de ta lecture du moment</div>
+
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-num">24</div><div class="stat-label">Webtoons suivis</div></div>
+          <div class="stat-card"><div class="stat-num">1 247</div><div class="stat-label">Chapitres lus</div></div>
+          <div class="stat-card"><div class="stat-num">8</div><div class="stat-label">En cours</div></div>
+          <div class="stat-card"><div class="stat-num">12</div><div class="stat-label">Terminés</div></div>
+        </div>
+
+        <div class="section-title">En cours de lecture</div>
+        <div class="webtoon-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+          <div class="wcard"><div class="wcard-cover" style="background:#EEF2E6">🌿</div><div class="wcard-info"><div class="wcard-title">The Garden of Words</div><div class="wcard-author">Kim Soo</div><span class="badge badge-reading">En cours</span><div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:62%"></div></div><div class="prog-label">62 / 100 ch.</div></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#EAF1F7">🌊</div><div class="wcard-info"><div class="wcard-title">Blue Tide Chronicles</div><div class="wcard-author">Lee Jinho</div><span class="badge badge-reading">En cours</span><div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:40%"></div></div><div class="prog-label">48 / 120 ch.</div></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#F5EDEE">🌸</div><div class="wcard-info"><div class="wcard-title">Petal & Storm</div><div class="wcard-author">Park Ara</div><span class="badge badge-reading">En cours</span><div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:85%"></div></div><div class="prog-label">170 / 200 ch.</div></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#F5F0E6">⚔️</div><div class="wcard-info"><div class="wcard-title">Iron Throne Saga</div><div class="wcard-author">Choi Min</div><span class="badge badge-paused">En pause</span><div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:30%"></div></div><div class="prog-label">30 / 98 ch.</div></div></div></div>
+        </div>
+
+        <div class="section-title">Derniers ajoutés au catalogue</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:10px;background:#fff;border:0.5px solid #E0D9CF;border-radius:8px;padding:8px 12px">
+            <div style="width:32px;height:38px;border-radius:4px;background:#EEF2E6;display:flex;align-items:center;justify-content:center;font-size:16px">🏙️</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:600;color:#3D3B2F">Neon City Nights</div><div style="font-size:10px;color:#8B8B7A">Han Seul · Science-Fiction, Action</div></div>
+            <span style="font-size:9px;color:#8B8B7A">Il y a 2j</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#fff;border:0.5px solid #E0D9CF;border-radius:8px;padding:8px 12px">
+            <div style="width:32px;height:38px;border-radius:4px;background:#F5EDEE;display:flex;align-items:center;justify-content:center;font-size:16px">🔮</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:600;color:#3D3B2F">The Oracle's Path</div><div style="font-size:10px;color:#8B8B7A">Yoon Bo · Fantasy, Mystère</div></div>
+            <span style="font-size:9px;color:#8B8B7A">Il y a 5j</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 2 : CATALOGUE -->
+  <div class="page" id="page-catalogue">
+    <div class="mockup-frame">
+      <div class="topbar">
+        <div class="logo">Le Fil <span>des Chapitres</span></div>
+        <div class="topnav">
+          <a href="#">Accueil</a>
+          <a href="#" class="active">Catalogue</a>
+          <a href="#">Ma liste</a>
+          <a href="#">Statistiques</a>
+        </div>
+      </div>
+      <div class="page-body">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:4px">
+          <div><div class="page-title">Catalogue</div><div class="page-subtitle">38 webtoons référencés</div></div>
+          <button class="btn-primary" style="font-size:11px;padding:7px 14px">+ Ajouter</button>
+        </div>
+
+        <div class="search-row">
+          <div style="position:relative;flex:1">
+            <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#8B8B7A;font-size:14px" aria-hidden="true"></i>
+            <input class="search-input" placeholder="Titre, auteur…" style="padding-left:30px" readonly>
+          </div>
+          <button class="filter-btn"><i class="ti ti-adjustments-horizontal" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i> Filtres</button>
+          <button class="filter-btn"><i class="ti ti-layout-grid" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i></button>
+          <button class="filter-btn" style="color:#3D3B2F;border-color:#C9A96E"><i class="ti ti-list" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i></button>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+          <span class="genre-tag sel">Tous</span>
+          <span class="genre-tag">Romance</span>
+          <span class="genre-tag">Fantasy</span>
+          <span class="genre-tag">Action</span>
+          <span class="genre-tag">Horreur</span>
+          <span class="genre-tag">Comédie</span>
+          <span class="genre-tag">Drame</span>
+        </div>
+
+        <div class="webtoon-grid">
+          <div class="wcard"><div class="wcard-cover" style="background:#EEF2E6">🌿</div><div class="wcard-info"><div class="wcard-title">The Garden of Words</div><div class="wcard-author">Kim Soo</div><div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px"><span class="badge" style="background:#EEF2E6;color:#5A7040">Romance</span><span class="badge" style="background:#F5F0E6;color:#7A6030">Drame</span></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#EAF1F7">🌊</div><div class="wcard-info"><div class="wcard-title">Blue Tide Chronicles</div><div class="wcard-author">Lee Jinho</div><div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px"><span class="badge" style="background:#EAF1F7;color:#3D6A8A">Action</span></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#F5EDEE">🌸</div><div class="wcard-info"><div class="wcard-title">Petal & Storm</div><div class="wcard-author">Park Ara</div><div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px"><span class="badge" style="background:#F5EDEE;color:#8A4A5A">Romance</span></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#F5F0E6">⚔️</div><div class="wcard-info"><div class="wcard-title">Iron Throne Saga</div><div class="wcard-author">Choi Min</div><div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px"><span class="badge" style="background:#EEF2E6;color:#5A7040">Fantasy</span><span class="badge" style="background:#EAF1F7;color:#3D6A8A">Action</span></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#F5F0E6">🏙️</div><div class="wcard-info"><div class="wcard-title">Neon City Nights</div><div class="wcard-author">Han Seul</div><div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px"><span class="badge" style="background:#EAF1F7;color:#3D6A8A">Sci-Fi</span></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#EEF2E6">🔮</div><div class="wcard-info"><div class="wcard-title">The Oracle's Path</div><div class="wcard-author">Yoon Bo</div><div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px"><span class="badge" style="background:#EEF2E6;color:#5A7040">Fantasy</span></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#F5EDEE">🦋</div><div class="wcard-info"><div class="wcard-title">Wings of Solitude</div><div class="wcard-author">Baek Ji</div><div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px"><span class="badge" style="background:#F5EDEE;color:#8A4A5A">Drame</span></div></div></div>
+          <div class="wcard"><div class="wcard-cover" style="background:#F5F0E6">🌙</div><div class="wcard-info"><div class="wcard-title">Midnight Reverie</div><div class="wcard-author">Oh Sora</div><div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:4px"><span class="badge" style="background:#F5EDEE;color:#8A4A5A">Romance</span><span class="badge" style="background:#EEF2E6;color:#5A7040">Surnaturel</span></div></div></div>
+        </div>
+
+        <div style="display:flex;justify-content:center;gap:6px;margin-top:4px">
+          <button class="filter-btn" style="padding:5px 10px;font-size:10px">← Préc.</button>
+          <button class="filter-btn" style="padding:5px 10px;font-size:10px;background:#3D3B2F;color:#FAF8F4;border-color:#3D3B2F">1</button>
+          <button class="filter-btn" style="padding:5px 10px;font-size:10px">2</button>
+          <button class="filter-btn" style="padding:5px 10px;font-size:10px">3</button>
+          <button class="filter-btn" style="padding:5px 10px;font-size:10px">Suiv. →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 3 : AJOUTER -->
+  <div class="page" id="page-ajouter">
+    <div class="mockup-frame">
+      <div class="topbar">
+        <div class="logo">Le Fil <span>des Chapitres</span></div>
+        <div class="topnav">
+          <a href="#">Accueil</a>
+          <a href="#" class="active">Catalogue</a>
+          <a href="#">Ma liste</a>
+          <a href="#">Statistiques</a>
+        </div>
+      </div>
+      <div class="page-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-size:12px;color:#8B8B7A;cursor:pointer">← Catalogue</span>
+        </div>
+        <div class="page-title">Ajouter un webtoon</div>
+        <div class="page-subtitle">Renseigne les informations du nouveau titre</div>
+
+        <div style="display:grid;grid-template-columns:100px 1fr;gap:16px">
+          <div>
+            <div style="width:100px;height:130px;border:1.5px dashed #C9A96E;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer">
+              <i class="ti ti-photo-plus" style="font-size:22px;color:#C9A96E" aria-hidden="true"></i>
+              <span style="font-size:9px;color:#C9A96E;text-align:center">Couverture<br>(URL ou upload)</span>
+            </div>
+          </div>
+          <div>
+            <div class="form-group">
+              <label class="form-label">Titre *</label>
+              <div class="form-input" style="color:#8B8B7A">Ex : The Garden of Words</div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Auteur *</label>
+                <div class="form-input" style="color:#8B8B7A">Ex : Kim Soo</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Chapitres totaux</label>
+                <div class="form-input" style="color:#8B8B7A">Ex : 120</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:8px">
+          <label class="form-label">Genres</label>
+          <div class="genres-wrap">
+            <span class="genre-tag sel">Romance</span><span class="genre-tag sel">Drame</span>
+            <span class="genre-tag">Fantasy</span><span class="genre-tag">Action</span><span class="genre-tag">Horreur</span>
+            <span class="genre-tag">Comédie</span><span class="genre-tag">Thriller</span><span class="genre-tag">Sci-Fi</span>
+            <span class="genre-tag">Isekai</span><span class="genre-tag">Sports</span><span class="genre-tag">Mystère</span>
+            <span class="genre-tag">Historique</span><span class="genre-tag">Surnaturel</span><span class="genre-tag">Tranche de vie</span>
+            <span class="genre-tag" style="border-style:dashed;color:#8B8B7A;border-color:#8B8B7A">+ Nouveau genre</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Lien de lecture</label>
+          <div class="form-input" style="color:#8B8B7A">https://…</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description / Synopsis</label>
+          <div class="form-textarea" style="color:#8B8B7A">Résumé de l'histoire…</div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+          <button class="btn-secondary">Annuler</button>
+          <button class="btn-primary">Ajouter au catalogue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 4 : FICHE WEBTOON -->
+  <div class="page" id="page-fiche">
+    <div class="mockup-frame">
+      <div class="topbar">
+        <div class="logo">Le Fil <span>des Chapitres</span></div>
+        <div class="topnav">
+          <a href="#">Accueil</a>
+          <a href="#" class="active">Catalogue</a>
+          <a href="#">Ma liste</a>
+          <a href="#">Statistiques</a>
+        </div>
+      </div>
+      <div class="page-body">
+        <div style="margin-bottom:6px;font-size:12px;color:#8B8B7A;cursor:pointer">← Catalogue</div>
+        <div class="fiche-header">
+          <div class="fiche-cover" style="background:#EEF2E6">🌿</div>
+          <div class="fiche-meta">
+            <div class="fiche-title">The Garden of Words</div>
+            <div class="fiche-author">Kim Soo · 100 chapitres</div>
+            <div class="fiche-genres">
+              <span class="badge" style="background:#EEF2E6;color:#5A7040">Romance</span>
+              <span class="badge" style="background:#F5F0E6;color:#7A6030">Drame</span>
+              <span class="badge" style="background:#EEF2E6;color:#5A7040">Tranche de vie</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <i class="ti ti-external-link" style="font-size:13px;color:#C9A96E" aria-hidden="true"></i>
+              <span style="font-size:11px;color:#C9A96E;cursor:pointer">Lire sur Webtoon</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Synopsis</div>
+        <div class="fiche-desc">Dans un jardin mystérieux où les saisons ne changent jamais, une jeune artiste croise le chemin d'un poète oublié par le temps. Ensemble, ils découvrent que chaque fleur cache un souvenir, et que certains mots ne peuvent être dits qu'en silence…</div>
+
+        <div style="background:#fff;border:0.5px solid #E0D9CF;border-radius:10px;padding:12px;margin-bottom:12px">
+          <div class="section-title">Mon suivi</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+            <div><div style="font-size:10px;color:#8B8B7A;margin-bottom:2px">Statut</div><span class="badge badge-reading" style="font-size:10px">En cours</span></div>
+            <div><div style="font-size:10px;color:#8B8B7A;margin-bottom:2px">Progression</div><div style="font-size:12px;font-weight:600;color:#3D3B2F">62 / 100</div></div>
+            <div><div style="font-size:10px;color:#8B8B7A;margin-bottom:2px">Ma note</div><div style="font-size:12px;color:#C9A96E">★★★★★★★★☆☆ <span style="color:#3D3B2F">8/10</span></div></div>
+          </div>
+          <div class="prog-bar" style="height:5px;margin-bottom:6px"><div class="prog-fill" style="width:62%"></div></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-gold" style="flex:1">+ 1 chapitre</button>
+            <button class="btn-secondary" style="font-size:11px;padding:7px 12px"><i class="ti ti-edit" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> Modifier</button>
+            <button class="btn-secondary" style="font-size:11px;padding:7px 12px;color:#C89BA5;border-color:#C89BA5"><i class="ti ti-trash" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i></button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn-secondary" style="font-size:11px"><i class="ti ti-edit" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> Modifier le webtoon</button>
+          <button class="btn-secondary" style="font-size:11px;color:#C89BA5;border-color:#C89BA5"><i class="ti ti-trash" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> Supprimer du catalogue</button>
+        </div>
+
+        <div style="margin-top:10px;background:#fff;border:0.5px solid #E0D9CF;border-radius:10px;padding:10px">
+          <div style="font-size:10px;color:#8B8B7A;font-style:italic;margin-bottom:4px">Mon avis</div>
+          <div style="font-size:11px;color:#3D3B2F;line-height:1.6">Une romance délicate et poétique. Les dessins sont somptueux, l'histoire prend son temps mais chaque chapitre est un plaisir.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 5 : MODIFIER -->
+  <div class="page" id="page-modifier">
+    <div class="mockup-frame">
+      <div class="topbar">
+        <div class="logo">Le Fil <span>des Chapitres</span></div>
+        <div class="topnav">
+          <a href="#">Accueil</a>
+          <a href="#" class="active">Catalogue</a>
+          <a href="#">Ma liste</a>
+          <a href="#">Statistiques</a>
+        </div>
+      </div>
+      <div class="page-body">
+        <div style="margin-bottom:6px;font-size:12px;color:#8B8B7A;cursor:pointer">← The Garden of Words</div>
+        <div class="page-title">Modifier le webtoon</div>
+        <div class="page-subtitle">Mets à jour les informations du titre</div>
+
+        <div style="display:grid;grid-template-columns:100px 1fr;gap:16px">
+          <div>
+            <div style="width:100px;height:130px;border-radius:10px;background:#EEF2E6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative;font-size:32px">
+              🌿
+              <div style="position:absolute;bottom:6px;right:6px;background:#C9A96E;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center">
+                <i class="ti ti-edit" style="font-size:10px;color:#fff" aria-hidden="true"></i>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="form-group">
+              <label class="form-label">Titre *</label>
+              <div class="form-input">The Garden of Words</div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Auteur *</label>
+                <div class="form-input">Kim Soo</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Chapitres totaux</label>
+                <div class="form-input">100</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:8px">
+          <label class="form-label">Genres</label>
+          <div class="genres-wrap">
+            <span class="genre-tag sel">Romance</span><span class="genre-tag sel">Drame</span><span class="genre-tag sel">Tranche de vie</span>
+            <span class="genre-tag">Fantasy</span><span class="genre-tag">Action</span><span class="genre-tag">Horreur</span>
+            <span class="genre-tag">Comédie</span><span class="genre-tag">Thriller</span><span class="genre-tag">Sci-Fi</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Lien de lecture</label>
+          <div class="form-input">https://webtoon.com/garden-of-words</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description / Synopsis</label>
+          <div class="form-textarea">Dans un jardin mystérieux où les saisons ne changent jamais, une jeune artiste croise le chemin d'un poète oublié par le temps…</div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:space-between;margin-top:4px">
+          <button class="btn-secondary" style="color:#C89BA5;border-color:#C89BA5"><i class="ti ti-trash" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> Supprimer</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary">Annuler</button>
+            <button class="btn-primary">Enregistrer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 6 : MA LISTE -->
+  <div class="page" id="page-liste">
+    <div class="mockup-frame">
+      <div class="topbar">
+        <div class="logo">Le Fil <span>des Chapitres</span></div>
+        <div class="topnav">
+          <a href="#">Accueil</a>
+          <a href="#">Catalogue</a>
+          <a href="#" class="active">Ma liste</a>
+          <a href="#">Statistiques</a>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="page-title">Ma liste de lecture</div>
+        <div class="page-subtitle">24 webtoons · mis à jour aujourd'hui</div>
+
+        <div class="search-row">
+          <div style="position:relative;flex:1">
+            <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#8B8B7A;font-size:14px" aria-hidden="true"></i>
+            <input class="search-input" placeholder="Rechercher dans ma liste…" style="padding-left:30px" readonly>
+          </div>
+          <button class="filter-btn"><i class="ti ti-adjustments-horizontal" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i> Filtrer</button>
+          <button class="filter-btn"><i class="ti ti-arrows-sort" style="font-size:14px;vertical-align:-2px" aria-hidden="true"></i> Trier</button>
+        </div>
+
+        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="filter-btn" style="font-size:10px;padding:4px 10px;color:#5A7040;border-color:#8B9B6A;background:#EEF2E6">En cours (8)</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 10px">Terminés (12)</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 10px">En pause (2)</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 10px">À lire (2)</button>
+          <button class="filter-btn" style="font-size:10px;padding:4px 10px">Abandonnés (0)</button>
+        </div>
+
+        <table class="list-table">
+          <thead><tr>
+            <th style="width:36px"></th>
+            <th>Titre</th>
+            <th>Progression</th>
+            <th>Note</th>
+            <th>Statut</th>
+            <th style="width:60px"></th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><div style="width:28px;height:36px;border-radius:4px;background:#EEF2E6;display:flex;align-items:center;justify-content:center;font-size:14px">🌿</div></td>
+              <td><div style="font-size:11px;font-weight:600;color:#3D3B2F">The Garden of Words</div><div style="font-size:9px;color:#8B8B7A">Kim Soo</div></td>
+              <td><div style="font-size:10px;color:#3D3B2F;margin-bottom:3px">62 / 100</div><div class="prog-bar" style="width:80px"><div class="prog-fill" style="width:62%"></div></div></td>
+              <td><span style="font-size:11px;color:#C9A96E">★ 8.0</span></td>
+              <td><span class="badge badge-reading">En cours</span></td>
+              <td><button class="plus-btn">+</button></td>
+            </tr>
+            <tr>
+              <td><div style="width:28px;height:36px;border-radius:4px;background:#EAF1F7;display:flex;align-items:center;justify-content:center;font-size:14px">🌊</div></td>
+              <td><div style="font-size:11px;font-weight:600;color:#3D3B2F">Blue Tide Chronicles</div><div style="font-size:9px;color:#8B8B7A">Lee Jinho</div></td>
+              <td><div style="font-size:10px;color:#3D3B2F;margin-bottom:3px">48 / 120</div><div class="prog-bar" style="width:80px"><div class="prog-fill" style="width:40%"></div></div></td>
+              <td><span style="font-size:11px;color:#C9A96E">★ 7.5</span></td>
+              <td><span class="badge badge-reading">En cours</span></td>
+              <td><button class="plus-btn">+</button></td>
+            </tr>
+            <tr>
+              <td><div style="width:28px;height:36px;border-radius:4px;background:#F5EDEE;display:flex;align-items:center;justify-content:center;font-size:14px">🌸</div></td>
+              <td><div style="font-size:11px;font-weight:600;color:#3D3B2F">Petal & Storm</div><div style="font-size:9px;color:#8B8B7A">Park Ara</div></td>
+              <td><div style="font-size:10px;color:#3D3B2F;margin-bottom:3px">170 / 200</div><div class="prog-bar" style="width:80px"><div class="prog-fill" style="width:85%"></div></div></td>
+              <td><span style="font-size:11px;color:#C9A96E">★ 9.0</span></td>
+              <td><span class="badge badge-reading">En cours</span></td>
+              <td><button class="plus-btn">+</button></td>
+            </tr>
+            <tr>
+              <td><div style="width:28px;height:36px;border-radius:4px;background:#F5F0E6;display:flex;align-items:center;justify-content:center;font-size:14px">⚔️</div></td>
+              <td><div style="font-size:11px;font-weight:600;color:#3D3B2F">Iron Throne Saga</div><div style="font-size:9px;color:#8B8B7A">Choi Min</div></td>
+              <td><div style="font-size:10px;color:#3D3B2F;margin-bottom:3px">30 / 98</div><div class="prog-bar" style="width:80px"><div class="prog-fill" style="width:30%"></div></div></td>
+              <td><span style="font-size:11px;color:#8B8B7A">— non noté</span></td>
+              <td><span class="badge badge-paused">En pause</span></td>
+              <td><button class="plus-btn">+</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 7 : STATISTIQUES -->
+  <div class="page" id="page-stats">
+    <div class="mockup-frame">
+      <div class="topbar">
+        <div class="logo">Le Fil <span>des Chapitres</span></div>
+        <div class="topnav">
+          <a href="#">Accueil</a>
+          <a href="#">Catalogue</a>
+          <a href="#">Ma liste</a>
+          <a href="#" class="active">Statistiques</a>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="page-title">Statistiques</div>
+        <div class="page-subtitle">Ton activité de lecture en un coup d'œil</div>
+
+        <div class="stats-row" style="margin-bottom:16px">
+          <div class="stat-card"><div class="stat-num">24</div><div class="stat-label">Webtoons</div></div>
+          <div class="stat-card"><div class="stat-num">1 247</div><div class="stat-label">Chapitres lus</div></div>
+          <div class="stat-card"><div class="stat-num">12</div><div class="stat-label">Terminés</div></div>
+          <div class="stat-card"><div class="stat-num">8.1</div><div class="stat-label">Note moyenne</div></div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <div class="section-title">Répartition par statut</div>
+            <div class="donut-wrap" style="margin-bottom:14px">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#EEF2E6" stroke-width="14"/>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#8B9B6A" stroke-width="14" stroke-dasharray="75.4 113.1" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#8FAEC5" stroke-width="14" stroke-dasharray="56.5 131.9" stroke-dashoffset="-75.4" transform="rotate(-90 40 40)"/>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#D4C4A0" stroke-width="14" stroke-dasharray="9.4 178.6" stroke-dashoffset="-131.9" transform="rotate(-90 40 40)"/>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#C89BA5" stroke-width="14" stroke-dasharray="9.4 178.6" stroke-dashoffset="-141.3" transform="rotate(-90 40 40)"/>
+              </svg>
+              <div class="legend">
+                <div class="leg-item"><div class="leg-dot" style="background:#8B9B6A"></div>En cours (8)</div>
+                <div class="leg-item"><div class="leg-dot" style="background:#8FAEC5"></div>Terminés (12)</div>
+                <div class="leg-item"><div class="leg-dot" style="background:#D4C4A0"></div>En pause (2)</div>
+                <div class="leg-item"><div class="leg-dot" style="background:#C89BA5"></div>À lire (2)</div>
+              </div>
+            </div>
+
+            <div class="section-title">Genres les plus lus</div>
+            <div class="bar-chart">
+              <div class="bar-row"><div class="bar-name">Romance</div><div class="bar-track"><div class="bar-fill" style="width:80%;background:#C89BA5"></div></div><div class="bar-val">10</div></div>
+              <div class="bar-row"><div class="bar-name">Fantasy</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:#8B9B6A"></div></div><div class="bar-val">8</div></div>
+              <div class="bar-row"><div class="bar-name">Action</div><div class="bar-track"><div class="bar-fill" style="width:48%;background:#8FAEC5"></div></div><div class="bar-val">6</div></div>
+              <div class="bar-row"><div class="bar-name">Drame</div><div class="bar-track"><div class="bar-fill" style="width:32%;background:#D4C4A0"></div></div><div class="bar-val">4</div></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title">Top 5 — mieux notés</div>
+            <div class="top5-list">
+              <div class="top5-item"><div class="top5-rank">1</div><div class="top5-info"><div class="top5-title">Petal & Storm</div><div class="top5-stars">★★★★★★★★★☆ 9.0</div></div></div>
+              <div class="top5-item"><div class="top5-rank">2</div><div class="top5-info"><div class="top5-title">The Garden of Words</div><div class="top5-stars">★★★★★★★★☆☆ 8.0</div></div></div>
+              <div class="top5-item"><div class="top5-rank">3</div><div class="top5-info"><div class="top5-title">Blue Tide Chronicles</div><div class="top5-stars">★★★★★★★½☆☆ 7.5</div></div></div>
+              <div class="top5-item"><div class="top5-rank">4</div><div class="top5-info"><div class="top5-title">Wings of Solitude</div><div class="top5-stars">★★★★★★★☆☆☆ 7.0</div></div></div>
+              <div class="top5-item"><div class="top5-rank">5</div><div class="top5-info"><div class="top5-title">Midnight Reverie</div><div class="top5-stars">★★★★★★½☆☆☆ 6.5</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
