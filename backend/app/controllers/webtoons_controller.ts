@@ -53,13 +53,17 @@ export default class WebtoonsController {
       await assertGenresExist(genreIds)
     }
 
+    // title/author sont obligatoires dans le validator, toujours presents.
+    // Les autres champs sont optionnels : seuls ceux reellement envoyes
+    // sont appliques, pour ne pas ecraser silencieusement une valeur
+    // existante par null quand le payload ne les mentionne pas.
     webtoon.merge({
       title: fields.title,
       author: fields.author,
-      description: fields.description ?? null,
-      coverUrl: fields.coverUrl ?? null,
-      chaptersTotal: fields.chaptersTotal ?? null,
-      link: fields.link ?? null,
+      ...(fields.description !== undefined && { description: fields.description }),
+      ...(fields.coverUrl !== undefined && { coverUrl: fields.coverUrl }),
+      ...(fields.chaptersTotal !== undefined && { chaptersTotal: fields.chaptersTotal }),
+      ...(fields.link !== undefined && { link: fields.link }),
     })
     await webtoon.save()
 
