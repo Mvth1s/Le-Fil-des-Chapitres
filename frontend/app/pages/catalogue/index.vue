@@ -73,8 +73,15 @@ const {
   text-decoration: none;
 }
 
+.card-link :deep(.app-card) {
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
 .card-link:hover :deep(.app-card) {
   border-color: var(--color-primary);
+  transform: scale(1.02);
 }
 
 .card-link:focus-visible :deep(.app-card) {
