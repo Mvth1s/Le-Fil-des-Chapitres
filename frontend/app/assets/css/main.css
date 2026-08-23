@@ -1,0 +1,87 @@
+/*
+ * Charte graphique - Le Fil des Chapitres (voir CLAUDE.md section 8).
+ * Ne pas introduire de couleur ou de police hors de cette liste sans
+ * validation explicite.
+ */
+:root {
+  --color-primary: #8b9b6a;
+  --color-blue: #8faec5;
+  --color-rose: #c89ba5;
+  --color-beige: #d4c4a0;
+  --color-accent: #c9a96e;
+  --color-text: #3d3b2f;
+  --color-text-muted: #8b8b7a;
+  --color-bg: #faf8f4;
+
+  --color-surface: #ffffff;
+  --color-border: #e4ded0;
+
+  --font-display: 'Dancing Script', cursive;
+  --font-body: 'Playfair Display', serif;
+
+  --radius-md: 8px;
+  --radius-lg: 16px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 48px);
+  margin: 0 0 var(--spacing-md);
+}
+
+h2 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: clamp(24px, 4vw, 28px);
+  margin: 0 0 var(--spacing-sm);
+}
+
+h3 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 19px;
+  margin: 0 0 var(--spacing-sm);
+}
+
+/*
+ * --color-text-muted n'a que ~3.3:1 de contraste sur --color-bg : conforme
+ * WCAG AA uniquement pour du texte large (>= 18px), pas pour du texte
+ * courant (voir resume de l'etape 5). Deux classes distinctes pour ne pas
+ * s'en servir par erreur sur du petit texte :
+ * - .text-secondary : petit texte (14px) parfaitement lisible, couleur
+ *   pleine --color-text.
+ * - .text-muted : reserve aux textes >= 18px (sous-titres, accroches),
+ *   seul contexte ou --color-text-muted reste conforme.
+ */
+small,
+.text-secondary {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.text-muted {
+  font-size: 18px;
+  color: var(--color-text-muted);
+}
