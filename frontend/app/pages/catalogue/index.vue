@@ -66,14 +66,21 @@ const {
 }
 
 /* Toute la carte est cliquable : le lien s'affiche en bloc et n'emprunte
-   pas l'apparence par defaut des liens (le style vient de AppCard). */
+   pas l'apparence par defaut des liens (le style vient de AppCard).
+   display:flex + height:100% : chaque carte occupe toute la hauteur de sa
+   ligne de grille (par defaut deja egale entre les cartes d'une meme
+   ligne), au lieu de s'arreter a la hauteur de son propre contenu. */
 .card-link {
-  display: block;
+  display: flex;
+  height: 100%;
   color: inherit;
   text-decoration: none;
 }
 
 .card-link :deep(.app-card) {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   transition:
     transform 0.15s ease,
     border-color 0.15s ease;
