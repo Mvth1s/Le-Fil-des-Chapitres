@@ -9,6 +9,17 @@ export default defineNuxtConfig({
     ['@nuxt/eslint', { config: { typescript: { tsconfigPath: './tsconfig.json' } } }],
   ],
   css: ['~/assets/css/main.css'],
+  runtimeConfig: {
+    // Prive : uniquement accessible cote serveur (SSR), jamais expose au
+    // navigateur. Le rendu SSR tourne DANS le conteneur frontend, qui doit
+    // joindre le backend via le reseau Docker interne, pas via localhost.
+    apiBaseServer: 'http://backend:3333/api',
+    public: {
+      // Expose au navigateur : utilise apres l'hydratation, quand le code
+      // s'execute sur la machine de l'utilisateur (hors reseau Docker).
+      apiBase: 'http://localhost:3333/api',
+    },
+  },
   app: {
     head: {
       title: 'Le Fil des Chapitres',

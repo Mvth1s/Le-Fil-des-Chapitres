@@ -58,5 +58,16 @@ services:
     depends_on:
       - backend
 
+  # Interface web pour consulter/modifier la base Postgres directement,
+  # utile en developpement pour voir les donnees sans client desktop.
+  # Jamais utilise en production.
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:
