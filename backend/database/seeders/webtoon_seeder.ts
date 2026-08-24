@@ -25,7 +25,7 @@ export default class extends BaseSeeder {
         title: 'Tower of God',
         author: 'SIU',
         description:
-          "Vingt-cinquieme Bam gravit une tour mysterieuse pour retrouver son amie Rachel, chaque etage abritant ses propres epreuves et dangers.",
+          'Vingt-cinquieme Bam gravit une tour mysterieuse pour retrouver son amie Rachel, chaque etage abritant ses propres epreuves et dangers.',
         chaptersTotal: null,
         genreNames: ['Action', 'Mystère', 'Fantasy'],
       },
@@ -33,7 +33,7 @@ export default class extends BaseSeeder {
         title: 'The Beginning After the End',
         author: 'TurtleMe',
         description:
-          "Un roi tout-puissant renait dans un monde de magie avec les souvenirs de sa vie precedente, decide a ne pas repeter les memes erreurs.",
+          'Un roi tout-puissant renait dans un monde de magie avec les souvenirs de sa vie precedente, decide a ne pas repeter les memes erreurs.',
         chaptersTotal: null,
         genreNames: ['Fantasy', 'Action'],
       },
@@ -41,7 +41,7 @@ export default class extends BaseSeeder {
         title: 'Lookism',
         author: 'Park Tae-jun',
         description:
-          "Harcele pour son physique, Park Hyung-Suk se reveille un jour avec un second corps, grand et athletique, et decouvre deux vies radicalement differentes.",
+          'Harcele pour son physique, Park Hyung-Suk se reveille un jour avec un second corps, grand et athletique, et decouvre deux vies radicalement differentes.',
         chaptersTotal: null,
         genreNames: ['Drame', 'Tranche de vie'],
       },
@@ -49,7 +49,7 @@ export default class extends BaseSeeder {
         title: 'True Beauty',
         author: 'Yaongyi',
         description:
-          "Grace au maquillage, Ju-Kyung cache un complexe qui la ronge depuis toujours. Mais garder ce secret devient de plus en plus difficile.",
+          'Grace au maquillage, Ju-Kyung cache un complexe qui la ronge depuis toujours. Mais garder ce secret devient de plus en plus difficile.',
         chaptersTotal: 190,
         genreNames: ['Romance', 'Comédie'],
       },
