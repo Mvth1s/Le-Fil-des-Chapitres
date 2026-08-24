@@ -71,6 +71,31 @@ async function handleStatusChange(entry: UserWebtoon, newStatus: string) {
       body: { status: newStatus },
     })
     await refresh()
+  } catch {
+    alert('Le changement de statut a echoue. Reessaie dans un instant.')
+  } finally {
+    updatingId.value = null
+  }
+}
+
+function canAddChapter(entry: UserWebtoon) {
+  const total = entry.webtoon.chaptersTotal
+  return total === null || entry.chaptersRead < total
+}
+
+async function handleAddChapter(entry: UserWebtoon) {
+  updatingId.value = entry.id
+  try {
+    await $fetch(`${apiBase}/user/list/${entry.id}/progress`, {
+      method: 'PATCH',
+      body: { chaptersRead: entry.chaptersRead + 1 },
+    })
+    // refresh() plutot qu'un patch local de l'entree : la reponse de PATCH
+    // ne precharge pas webtoon.genres (a la difference de GET /user/list),
+    // l'utiliser directement casserait l'affichage des genres sur cette carte.
+    await refresh()
+  } catch {
+    alert("La mise a jour de la progression a echoue. Reessaie dans un instant.")
   } finally {
     updatingId.value = null
   }
@@ -118,12 +143,23 @@ async function handleStatusChange(entry: UserWebtoon, newStatus: string) {
           </template>
 
           <p class="text-secondary">{{ entry.webtoon.author }}</p>
-          <p class="text-secondary">
-            <template v-if="entry.webtoon.chaptersTotal">
-              {{ entry.chaptersRead }} / {{ entry.webtoon.chaptersTotal }} chapitres
-            </template>
-            <template v-else>{{ entry.chaptersRead }} chapitres lus</template>
-          </p>
+
+          <div class="progress">
+            <p class="text-secondary">
+              <template v-if="entry.webtoon.chaptersTotal">
+                {{ entry.chaptersRead }} / {{ entry.webtoon.chaptersTotal }} chapitres
+              </template>
+              <template v-else>{{ entry.chaptersRead }} chapitres lus</template>
+            </p>
+            <AppButton
+              variant="outline"
+              size="sm"
+              :disabled="updatingId === entry.id || !canAddChapter(entry)"
+              @click.stop="handleAddChapter(entry)"
+            >
+              {{ updatingId === entry.id ? '...' : '+1 chapitre' }}
+            </AppButton>
+          </div>
 
           <div v-if="entry.webtoon.genres.length > 0" class="genres">
             <AppBadge v-for="genre in entry.webtoon.genres" :key="genre.id">
@@ -202,11 +238,33 @@ async function handleStatusChange(entry: UserWebtoon, newStatus: string) {
   flex: 1;
 }
 
-/* Le select de statut reste une commande independante de la navigation de
-   la carte (voir @click.stop dans le template) : curseur normal, pas de
-   confusion avec le clic-pour-naviguer du reste de la carte. */
-.entry-card :deep(.app-select) {
+/* Le select de statut et le bouton +1 chapitre restent des commandes
+   independantes de la navigation de la carte (voir @click.stop dans le
+   template) : curseur normal, pas de confusion avec le clic-pour-naviguer
+   du reste de la carte. */
+.entry-card :deep(.app-select),
+.entry-card :deep(.app-button) {
   cursor: auto;
+}
+
+/* Annule le curseur "interdit" par defaut de AppButton:disabled : le
+   bouton est desactive tres brievement pendant la requete (voir
+   updatingId), l'opacite reduite suffit comme indicateur, la croix rouge
+   du curseur clignotant le temps de l'appel est plus perturbante qu'utile. */
+.entry-card :deep(.app-button:disabled) {
+  cursor: auto;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.progress p {
+  margin: 0;
 }
 
 .genres {
