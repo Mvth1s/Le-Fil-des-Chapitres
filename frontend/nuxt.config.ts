@@ -31,6 +31,10 @@ export default defineNuxtConfig({
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap',
         },
+        // favicon.ico reste servi par convention Nuxt (public/favicon.ico) ;
+        // ce lien PNG est prefere par les navigateurs qui le supportent.
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
       ],
     },
   },

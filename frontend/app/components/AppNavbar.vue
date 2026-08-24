@@ -12,7 +12,10 @@ const links = [
 
 <template>
   <nav class="app-navbar">
-    <NuxtLink to="/" class="app-navbar__logo">Le Fil des Chapitres</NuxtLink>
+    <NuxtLink to="/" class="app-navbar__logo">
+      <img src="/logo-icon.png" alt="" class="app-navbar__logo-icon">
+      Le Fil des Chapitres
+    </NuxtLink>
     <ul class="app-navbar__links">
       <li v-for="link in links" :key="link.to">
         <NuxtLink :to="link.to" class="app-navbar__link">{{ link.label }}</NuxtLink>
@@ -34,11 +37,19 @@ const links = [
 }
 
 .app-navbar__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 28px;
   color: var(--color-text);
   text-decoration: none;
+}
+
+.app-navbar__logo-icon {
+  height: 32px;
+  width: auto;
 }
 
 .app-navbar__links {
