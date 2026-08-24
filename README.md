@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="logo/lfdc_logo_banner.png" alt="Le Fil des Chapitres" width="480">
+
 # 📖 Le Fil des Chapitres
 
 **Suivez, organisez et gérez votre lecture de webtoons.**
