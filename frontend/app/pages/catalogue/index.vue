@@ -7,12 +7,25 @@ const {
   pending,
   error,
   refresh,
-} = await useFetch<Webtoon[]>(`${apiBase}/webtoons`)
+} = await useFetch<Webtoon[]>(`${apiBase}/webtoons`, {
+  // Cle explicite : par defaut useFetch derive sa cle de l'URL, or l'URL
+  // differe entre le SSR (apiBaseServer, reseau Docker interne) et le
+  // navigateur (apiBase public) - voir useApiBase(). Sans cle stable, le
+  // client ne retrouve jamais les donnees transferees par le SSR sous la
+  // meme cle, refait l'appel de zero, et desynchronise pending/data entre
+  // le rendu serveur et l'hydratation (erreur "Hydration node mismatch").
+  key: 'webtoons-list',
+})
 </script>
 
 <template>
   <main class="page">
-    <h1>Catalogue</h1>
+    <div class="page-header">
+      <h1>Catalogue</h1>
+      <NuxtLink to="/catalogue/new">
+        <AppButton variant="outline" size="sm">Ajouter un webtoon</AppButton>
+      </NuxtLink>
+    </div>
 
     <p v-if="pending" class="text-secondary">Chargement du catalogue...</p>
 
@@ -56,6 +69,18 @@ const {
   padding: var(--spacing-xl) var(--spacing-lg);
   max-width: 1100px;
   margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.page-header h1 {
+  margin: 0;
 }
 
 .grid {

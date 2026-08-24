@@ -2,6 +2,7 @@
 import type { Webtoon } from '~/types/webtoon'
 
 const route = useRoute()
+const router = useRouter()
 const apiBase = useApiBase()
 // route.params.id est une route dynamique unique ([id].vue, pas [...id].vue) :
 // toujours une string, jamais un tableau, mais le typage de vue-router
@@ -12,7 +13,26 @@ const {
   pending,
   error,
   refresh,
-} = await useFetch<Webtoon>(`${apiBase}/webtoons/${webtoonId}`)
+} = await useFetch<Webtoon>(`${apiBase}/webtoons/${webtoonId}`, {
+  // Cle stable, independante de l'URL (voir catalogue/index.vue) : necessaire
+  // car apiBase differe entre le SSR et le navigateur.
+  key: `webtoon-${webtoonId}`,
+})
+
+const deleting = ref(false)
+
+async function handleDelete() {
+  if (!confirm('Supprimer definitivement ce webtoon du catalogue ?')) {
+    return
+  }
+  deleting.value = true
+  try {
+    await $fetch(`${apiBase}/webtoons/${webtoonId}`, { method: 'DELETE' })
+    await router.push('/catalogue')
+  } finally {
+    deleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -30,7 +50,17 @@ const {
     </div>
 
     <article v-else-if="webtoon">
-      <h1>{{ webtoon.title }}</h1>
+      <div class="article-header">
+        <h1>{{ webtoon.title }}</h1>
+        <div class="article-actions">
+          <NuxtLink :to="`/catalogue/${webtoonId}/edit`">
+            <AppButton variant="outline" size="sm">Modifier</AppButton>
+          </NuxtLink>
+          <AppButton variant="ghost" size="sm" :disabled="deleting" @click="handleDelete">
+            Supprimer
+          </AppButton>
+        </div>
+      </div>
       <p class="text-secondary">{{ webtoon.author }}</p>
 
       <div v-if="webtoon.genres.length > 0" class="genres">
@@ -58,6 +88,23 @@ const {
 
 article {
   margin-top: var(--spacing-lg);
+}
+
+.article-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.article-header h1 {
+  margin: 0;
+}
+
+.article-actions {
+  display: flex;
+  gap: var(--spacing-sm);
 }
 
 .genres {
