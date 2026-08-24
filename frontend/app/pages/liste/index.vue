@@ -14,14 +14,6 @@ const {
   key: 'user-list',
 })
 
-const STATUS_LABELS: Record<UserWebtoonStatus, string> = {
-  reading: 'En cours',
-  completed: 'Terminé',
-  on_hold: 'En pause',
-  dropped: 'Abandonné',
-  plan_to_read: 'À lire',
-}
-
 const statusOptions = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }))
 
 const statusFilterOptions = [{ value: '', label: 'Tous les statuts' }, ...statusOptions]
