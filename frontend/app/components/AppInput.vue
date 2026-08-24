@@ -16,7 +16,12 @@ withDefaults(
   }
 )
 
-const model = defineModel<string>()
+// string | number : pour un <input type="number">, Vue caste automatiquement
+// la valeur du v-model en Number des que le prop "type" resolu vaut "number"
+// (comportement du runtime, independant du modificateur .number), meme si
+// "type" est ici une simple prop string. Le consommateur doit donc gerer
+// les deux cas s'il utilise type="number".
+const model = defineModel<string | number>()
 
 // id stable pour lier <label for> et <input id> sans que l'appelant ait a
 // le fournir lui-meme.
