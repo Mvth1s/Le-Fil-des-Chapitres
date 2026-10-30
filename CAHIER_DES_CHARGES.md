@@ -30,7 +30,7 @@
 | **Type** | Application web full-stack |
 | **Version actuelle** | 0.1.0 (en développement) |
 | **Licence** | MIT |
-| **Auteur** | Mathis AGUADO |
+| **Auteur** | Mvth1s |
 | **Dépôt** | GitHub (privé / public) |
 
 ### En une phrase
