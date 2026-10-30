@@ -9,6 +9,8 @@ import User from '#models/user'
  * est tout de meme hashe pour ne jamais stocker de valeur en clair.
  */
 export default class extends BaseSeeder {
+  static environment = ['development', 'test']
+
   async run() {
     await User.firstOrCreate({ username: 'mathis' }, { password: await hash.make('changeme') })
   }
