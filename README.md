@@ -157,5 +157,5 @@ Ce projet est personnel et n'accepte pas de contributions externes pour le momen
 
 ## 📄 Licence
 
-Ce projet est sous licence [MIT](LICENSE) — © 2026 Mathis AGUADO.
+Ce projet est sous licence [MIT](LICENSE) — © 2026 Mvth1s.
 

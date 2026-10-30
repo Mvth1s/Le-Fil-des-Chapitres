@@ -12,7 +12,7 @@ et une liste de lecture individuelle avec progression, statuts et statistiques.
 
 Double objectif : outil réellement utilisé au quotidien, et support d'apprentissage de la stack.
 
-**Auteur unique et utilisateur unique :** Mathis AGUADO (développeur junior).
+**Auteur unique et utilisateur unique :** Mvth1s (développeur junior).
 Licence MIT. Version courante : 0.1.0 (en développement).
 
 ---
@@ -217,7 +217,7 @@ Contraintes à ne jamais oublier :
 
 ## 12. Mode de collaboration attendu
 
-Claude Code écrit le code. Mathis valide, comprend et décide.
+Claude Code écrit le code. Mvth1s valide, comprend et décide.
 
 - **Exécuter, puis expliquer.** Annoncer brièvement l'intention, produire le code, puis
   expliciter les décisions non triviales. Le projet est un support d'apprentissage :
