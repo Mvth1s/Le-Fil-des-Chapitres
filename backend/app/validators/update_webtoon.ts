@@ -1,4 +1,5 @@
 import vine from '@vinejs/vine'
+import { HTTP_URL } from '#validators/url_options'
 
 /**
  * Meme regles que la creation, mais l'unicite du titre ignore la ligne en
@@ -22,9 +23,9 @@ export const updateWebtoonValidator = vine.compile(
       }),
     author: vine.string().trim().minLength(1),
     description: vine.string().trim().optional(),
-    coverUrl: vine.string().trim().url().optional(),
+    coverUrl: vine.string().trim().url(HTTP_URL).optional(),
     chaptersTotal: vine.number().positive().optional(),
-    link: vine.string().trim().url().optional(),
+    link: vine.string().trim().url(HTTP_URL).optional(),
     genreIds: vine.array(vine.string().uuid()).optional(),
   })
 )
