@@ -38,3 +38,6 @@ router
     router.get('/stats', [StatsController, 'index'])
   })
   .prefix('/api')
+  // A non-UUID :id matches no route (404) instead of reaching PostgreSQL (500).
+  // Strict hex regex: router.matchers.uuid() uses [0-9a-zA-F], which lets 'zzzzzzzz-...' through.
+  .where('id', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
