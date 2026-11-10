@@ -13,7 +13,8 @@ model: inherit
 
 - `frontend/app/**`
 - `frontend/server/**`
-- `frontend/nuxt.config.ts`
+- `frontend/nuxt.config.ts`, `frontend/tsconfig.json`, `frontend/eslint.config.mjs`,
+  `frontend/vitest.config.ts`, `frontend/.nuxtrc` (configuration du framework)
 - `frontend/public/**`
 
 Tout le reste du dépôt est en lecture seule pour cet agent.

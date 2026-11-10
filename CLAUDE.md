@@ -38,7 +38,7 @@ Pas de React, pas de Prisma, pas de NestJS. Ces choix ont été arbitrés et son
 ```
 /
 ├── frontend/          Nuxt 4
-├── backend/           AdonisJS 6
+├── backend/           AdonisJS 7
 ├── docker-compose.yml
 ├── CLAUDE.md
 ├── CAHIER_DES_CHARGES.md
@@ -66,6 +66,7 @@ Pas de React, pas de Prisma, pas de NestJS. Ces choix ont été arbitrés et son
    Nitro qui ajoute un en-tête `X-Api-Key` exigé par le backend en production ; le frontend
    entier est derrière une HTTP Basic Auth (identifiants en variables d'environnement).
    `GET /health` reste public. Pas de session, pas de JWT, pas de page de login.
+   (Mis en place à l'étape 11 de la roadmap.)
 4. **TypeScript partout.** Pas de fichier `.js` dans `frontend/` ni `backend/`.
 5. **Validation systématique côté serveur** avant tout accès à la base (validators AdonisJS).
 
@@ -202,7 +203,8 @@ npm run build
 
 ## 11. Hébergement
 
-Offres gratuites, usage personnel. Guide pas à pas : `docs/DEPLOIEMENT.md`.
+Offres gratuites, usage personnel. Cible de l'étape 11 de la roadmap ; guide pas à pas :
+`docs/DEPLOIEMENT.md`.
 
 | Service | Plateforme | Points d'attention |
 |---|---|---|

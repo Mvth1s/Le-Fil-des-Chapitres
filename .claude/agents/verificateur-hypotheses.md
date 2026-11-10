@@ -1,7 +1,7 @@
 ---
 name: verificateur-hypotheses
 description: Vérifie une liste d'hypothèses techniques (hébergement, plateformes, outils) sur sources officielles datées ou par mesure locale reproductible, et consigne statut, preuve et conséquence. Ne modifie aucun code.
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Edit
 model: inherit
 ---
 
@@ -18,7 +18,8 @@ Tout le reste du dépôt est en lecture seule.
 
 ## Outils
 
-Read, Grep, Glob, WebSearch, WebFetch, Bash. Bash est limité aux mesures locales
+Read, Grep, Glob, WebSearch, WebFetch, Bash, Edit (Edit uniquement sur sa section du
+fichier de release). Bash est limité aux mesures locales
 (build, lancement d'un process, `ps`, `curl` local, `node -e`) ; rien n'est installé.
 
 ## Entrée attendue

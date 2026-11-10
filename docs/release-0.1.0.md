@@ -29,7 +29,11 @@ Agents existants mis en conformité au lot 3 : `backend-adonisjs`, `frontend-nux
 - `backend-adonisjs` couvre aussi `backend/ace.js`, `adonisrc.ts`, `tsconfig.json`,
   `eslint.config.js` et `bin/**` (configuration du framework, sans propriétaire sinon ;
   nécessaire à la migration AdonisJS 7).
-- `deploiement` couvre aussi `.gitleaksignore`.
+- `deploiement` couvre aussi `.gitleaksignore`, tout `.github/**` et les `.dockerignore`.
+- `frontend-nuxt` couvre aussi la configuration du framework (`tsconfig.json`,
+  `eslint.config.mjs`, `vitest.config.ts`, `.nuxtrc`).
+- Fichiers restant à l'orchestrateur : `package.json` et lockfiles (dépendances),
+  `.gitignore`, `.nvmrc`, `backend/.editorconfig`, `frontend/README.md`, `Maquette/`.
 - `docs-keeper` exclut `CLAUDE.md` (interdit commun) et `docs/release-*.md` (fichier de
   l'orchestrateur et des auditeurs). Les modifications de `CLAUDE.md` et des fichiers
   d'agents sont faites par l'orchestrateur.
@@ -135,3 +139,6 @@ Toutes consultées le 2026-11-10.
 - Tirets cadratins hérités (antérieurs à la mission) : 31 dans `CAHIER_DES_CHARGES.md`,
   14 dans `README.md`. Non modifiés (hors périmètre, modification minimale) ; les fichiers
   produits pendant la mission n'en contiennent aucun. Nettoyage à décider par Mvth1s.
+- Les restrictions des agents (Bash limité, pas de Git en écriture) sont déclaratives :
+  aucune règle `permissions.deny` dans `.claude/settings.json` ne les impose. Ajouter de
+  telles règles relève d'un réglage de permissions : décision de Mvth1s (audit lot 3, M3).

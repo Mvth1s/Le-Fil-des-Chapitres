@@ -14,7 +14,8 @@ Configurer l'exécution locale et la chaîne de livraison (CI/CD).
 - `docker-compose.yml`
 - `docker/**`
 - `*/Dockerfile`
-- `.github/workflows/**`, `.github/dependabot.yml`
+- `.github/**` (workflows, dependabot, modèles d'issue et de PR)
+- `*/.dockerignore`
 - `frontend/vercel.json`
 - `.env.example`, `backend/.env.example`, `frontend/.env.example`
 - `.gitleaksignore`
@@ -25,7 +26,8 @@ Tout le reste du dépôt est en lecture seule pour cet agent.
 
 Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch (documentation officielle des
 plateformes uniquement). Bash sert à `docker`, `docker compose` (jamais `down -v`), aux
-validations (`bash -n`, actionlint via Docker) et à `gh api` en lecture.
+validations (`bash -n`, actionlint via Docker) et à `gh api` en lecture seule
+(requêtes GET uniquement, jamais `-X`, `-f`, `-F` ni `--input`).
 
 ## Entrée attendue
 

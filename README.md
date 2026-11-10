@@ -83,10 +83,60 @@ docker compose up
 Les migrations (compte `lfdc_owner`), puis les seeders et le serveur (compte `lfdc_app`), s'exécutent automatiquement. L'application est disponible sur [http://localhost:3000](http://localhost:3000).
 
 > Si vous aviez un volume local créé avant ce changement des comptes PostgreSQL : `docker compose down -v` (base locale uniquement), puis relancez.
+>
+> **Attention :** `docker compose down -v` efface définitivement toutes les données de la base locale (volume `postgres_data`). À n'utiliser que si vous acceptez de les perdre.
 
 ### Lancement hors Docker
 
-Copiez `backend/.env.example` en `backend/.env` et adaptez-le, puis lancez le backend (`node ace serve --hmr`) et le frontend (`npm run dev`) depuis leur dossier respectif.
+La base reste dans Docker. Le backend et le frontend tournent sur l'hôte (Node.js, voir `.nvmrc`).
+
+**1. Base de données** (depuis la racine du dépôt)
+
+```bash
+cp .env.example .env
+# remplacer chaque marqueur <...> comme dans le démarrage rapide (openssl rand)
+docker compose up -d postgres
+```
+
+Postgres est publié sur `127.0.0.1:5432`. Les trois rôles (`lfdc_owner`, `lfdc_app`, `lfdc_ro`) sont créés au premier démarrage.
+
+**2. Backend**
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+Dans `backend/.env`, remplacez les marqueurs par les valeurs du `.env` racine :
+
+| Variable de `backend/.env` | Valeur à recopier depuis le `.env` racine |
+|---|---|
+| `APP_KEY` | `APP_KEY` |
+| `DB_PASSWORD` | `DB_APP_PASSWORD` |
+| `DB_MIGRATION_PASSWORD` | `DB_OWNER_PASSWORD` |
+
+```bash
+npm ci
+node ace migration:run --connection=migration
+node ace db:seed
+npm run dev
+```
+
+L'API écoute sur [http://localhost:3333](http://localhost:3333).
+
+**3. Frontend** (dans un autre terminal)
+
+```bash
+cd frontend
+cp .env.example .env
+```
+
+Dans `frontend/.env`, remplacez `NUXT_API_BASE_SERVER` par `http://localhost:3333/api` (le nom `backend` ne résout qu'à l'intérieur du réseau Docker).
+
+```bash
+npm ci
+npm run dev
+```
 
 ---
 
@@ -111,6 +161,13 @@ le-fil-des-chapitres/
 │   │   └── seeders/        # Données initiales (genres)
 │   └── start/
 │       └── routes.ts       # Déclaration des routes API
+│
+├── docker/
+│   └── postgres/init/      # Création des rôles PostgreSQL au premier démarrage
+│
+├── docs/                   # Documentation (déploiement, sécurité, audits)
+├── .claude/
+│   └── agents/             # Sous-agents Claude Code
 │
 ├── docker-compose.yml      # Orchestration des services
 ├── .env.example            # Modèle de configuration
