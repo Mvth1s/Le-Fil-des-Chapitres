@@ -553,11 +553,9 @@ test.group('User list API - progression (PATCH) et suppression', (group) => {
 })
 
 /**
- * BUG CONNU : un id non UUID dans l'URL est passe tel quel a Postgres, qui
- * rejette la comparaison avec la colonne uuid ; l'API renvoie 500 au lieu de
- * 404. Les tests decrivent le comportement attendu et sont marques
- * .fails() pour ne pas bloquer la CI : quand le controller sera corrige,
- * Japa signalera ces tests comme en echec, il suffira de retirer .fails().
+ * Regression couverte : un id non UUID dans l'URL renvoyait 500 (Postgres
+ * rejette la comparaison avec la colonne uuid). La contrainte de route doit
+ * le traiter comme une ressource absente : 404.
  */
 test.group('User list API - id non UUID', (group) => {
   isolateEachTest(group)
@@ -572,6 +570,6 @@ test.group('User list API - id non UUID', (group) => {
       const response = await send(client)
 
       response.assertStatus(404)
-    }).fails('bug connu : id non UUID renvoie 500 au lieu de 404')
+    })
   }
 })

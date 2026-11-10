@@ -20,6 +20,12 @@ test.group('Webtoons API', () => {
 
     response.assertStatus(404)
   })
+
+  test('GET /api/webtoons/:id renvoie 404 pour un id non UUID', async ({ client }) => {
+    const response = await client.get('/api/webtoons/abc')
+
+    response.assertStatus(404)
+  })
 })
 
 test.group('Webtoons API - protocoles des URL', () => {
