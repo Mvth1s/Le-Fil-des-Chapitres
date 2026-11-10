@@ -7,11 +7,12 @@ import AppModal from '~/components/AppModal.vue'
 // interroge document.body plutot que le wrapper.
 let wrapper: VueWrapper | null = null
 
-function mountModal(open: boolean, slots: Record<string, string> = {}) {
+function mountModal(open: boolean, slots: Record<string, string> = {}, persistent = false) {
   wrapper = mount(AppModal, {
     attachTo: document.body,
     props: {
       open,
+      persistent,
       // Boucle v-model : le parent repercute l'emission sur la prop.
       'onUpdate:open': (value: boolean) => wrapper?.setProps({ open: value }),
     },
@@ -72,6 +73,7 @@ describe('AppModal', () => {
     await nextTick()
     expect(dialog()!.querySelector('.app-modal__actions')).toBeNull()
     wrapper!.unmount()
+    wrapper = null
     document.body.innerHTML = ''
 
     mountModal(true, { actions: '<button>OK</button>' })
@@ -136,5 +138,40 @@ describe('AppModal', () => {
     expect(dialog()).toBeNull()
     expect(document.body.style.overflow).toBe('')
     expect(document.activeElement).toBe(trigger)
+  })
+  it('persistent : ni Echap ni le clic sur le fond ne ferment', async () => {
+    mountModal(true, {}, true)
+    await nextTick()
+    keydown(dialog()!, 'Escape')
+    document.body.querySelector<HTMLElement>('.app-modal__backdrop')!.click()
+    expect(wrapper!.emitted('update:open')).toBeUndefined()
+    expect(dialog()).not.toBeNull()
+  })
+
+  it('ecoute Echap sur document', async () => {
+    mountModal(true)
+    await nextTick()
+    keydown(document.body, 'Escape')
+    expect(wrapper!.emitted('update:open')).toEqual([[false]])
+  })
+
+  it('ramene le focus dans le dialog sur Tab quand il est sur body', async () => {
+    mountModal(true)
+    await nextTick()
+    await nextTick()
+    ;(document.activeElement as HTMLElement).blur()
+    expect(document.activeElement).toBe(document.body)
+    const tab = keydown(document.body, 'Tab')
+    expect(tab.defaultPrevented).toBe(true)
+    expect(document.activeElement?.id).toBe('first')
+  })
+
+  it('libere le scroll au demontage avec la modale ouverte', async () => {
+    mountModal(true)
+    await nextTick()
+    expect(document.body.style.overflow).toBe('hidden')
+    wrapper!.unmount()
+    wrapper = null
+    expect(document.body.style.overflow).toBe('')
   })
 })
