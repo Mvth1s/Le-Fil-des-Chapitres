@@ -7,9 +7,10 @@ FROM node:24-alpine
 WORKDIR /app
 
 # Copier uniquement les manifests d'abord pour profiter du cache Docker :
-# tant que package.json ne change pas, "npm install" n'est pas rejoue.
+# tant que les manifests ne changent pas, "npm ci" n'est pas rejoue. npm ci
+# installe exactement le lockfile et echoue s'il diverge de package.json.
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 

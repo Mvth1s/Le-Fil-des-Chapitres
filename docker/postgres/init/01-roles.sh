@@ -29,6 +29,19 @@ set -Eeo pipefail
 : "${DB_APP_PASSWORD:?DB_APP_PASSWORD est vide ou absent}"
 : "${DB_RO_PASSWORD:?DB_RO_PASSWORD est vide ou absent}"
 
+# Echec explicite si un marqueur "<...>" de .env.example n'a pas ete remplace.
+# ${!var} : expansion indirecte bash, lit la variable dont le nom est dans var.
+for var in POSTGRES_PASSWORD DB_OWNER_PASSWORD DB_APP_PASSWORD DB_RO_PASSWORD; do
+  case "${!var:-}" in
+    '<'*)
+      echo "01-roles.sh : $var contient encore le marqueur de .env.example." >&2
+      echo "  Generer une valeur avec : openssl rand -hex 32" >&2
+      echo "  puis la reporter dans .env et repartir d'un volume vide." >&2
+      exit 1
+      ;;
+  esac
+done
+
 GRANTS_FILE=/sql/grants.sql
 # -f et non -r : si le fichier n'existe pas sur l'hote, docker cree un
 # dossier vide a sa place au montage.

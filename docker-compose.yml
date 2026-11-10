@@ -22,7 +22,9 @@ services:
       DB_APP_PASSWORD: ${DB_APP_PASSWORD:?DB_APP_PASSWORD manquant dans .env (voir .env.example)}
       DB_RO_PASSWORD: ${DB_RO_PASSWORD:?DB_RO_PASSWORD manquant dans .env (voir .env.example)}
     ports:
-      - '5432:5432'
+      # Lie a 127.0.0.1 : la base n'est joignable que depuis cette machine,
+      # pas depuis le reseau local (Docker contourne le pare-feu de l'hote).
+      - '127.0.0.1:5432:5432'
     volumes:
       # Volume nomme : les donnees survivent a un "docker compose down"
       # (mais pas a "docker compose down -v").
@@ -111,7 +113,8 @@ services:
     image: adminer:4
     restart: unless-stopped
     ports:
-      - '8080:8080'
+      # Lie a 127.0.0.1 pour la meme raison que postgres.
+      - '127.0.0.1:8080:8080'
     depends_on:
       - postgres
 
