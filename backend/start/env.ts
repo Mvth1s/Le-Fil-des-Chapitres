@@ -11,6 +11,20 @@
 
 import { Env } from '@adonisjs/core/env'
 
+/*
+| Required, non empty secret that is not a leftover placeholder from
+| .env.example ("<a-recopier ...>", "<a-generer: ...>").
+*/
+function secret(key: string, value?: string): string {
+  const val = Env.schema.string()(key, value)
+  if (val.startsWith('<')) {
+    throw new Error(
+      `Environment variable "${key}" still holds a placeholder from .env.example, replace it with a real value`
+    )
+  }
+  return val
+}
+
 export default await Env.create(new URL('../', import.meta.url), {
   NODE_ENV: Env.schema.enum(['development', 'production', 'test'] as const),
   PORT: Env.schema.number(),
@@ -18,10 +32,9 @@ export default await Env.create(new URL('../', import.meta.url), {
   | APP_KEY feeds the "legacy" encryption driver (config/encryption.ts),
   | which refuses keys shorter than 16 characters. Validating here makes
   | the app fail at boot with a clear message instead of on first use.
-  | Env.schema.string has no length option, hence the custom function.
   */
   APP_KEY: (key: string, value?: string): string => {
-    const appKey = Env.schema.string()(key, value)
+    const appKey = secret(key, value)
     if (appKey.length < 16) {
       throw new Error(`Environment variable "${key}" must be at least 16 characters long`)
     }
@@ -39,7 +52,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   DB_PORT: Env.schema.number(),
   DB_USER: Env.schema.string(),
   // Required and non empty: Env.schema.string rejects an empty value.
-  DB_PASSWORD: Env.schema.string(),
+  DB_PASSWORD: secret,
   DB_DATABASE: Env.schema.string(),
 
   /*
@@ -48,5 +61,6 @@ export default await Env.create(new URL('../', import.meta.url), {
   | running site never receives these variables in production.
   */
   DB_MIGRATION_USER: Env.schema.string.optional(),
-  DB_MIGRATION_PASSWORD: Env.schema.string.optional(),
+  DB_MIGRATION_PASSWORD: (key: string, value?: string): string | undefined =>
+    Env.schema.string.optional()(key, value) === undefined ? undefined : secret(key, value),
 })
