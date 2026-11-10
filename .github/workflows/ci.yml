@@ -4,8 +4,17 @@ on:
   pull_request:
     branches: [dev, main]
 
+# Moindre privilege : le workflow ne fait que lire le depot.
+permissions:
+  contents: read
+
 env:
-  NODE_VERSION: '22'
+  # AdonisJS 7 exige Node.js 24.
+  NODE_VERSION: '24'
+
+# Actions tierces epinglees par SHA de commit complet (un tag peut etre
+# deplace, pas un SHA). Le tag en commentaire sert a la lecture et a
+# Dependabot pour proposer les mises a jour.
 
 jobs:
   # Detecte quels dossiers ont change dans la PR. Ce job tourne toujours,
@@ -18,7 +27,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
       - id: filter
@@ -36,6 +45,50 @@ jobs:
             echo "frontend=false" >> "$GITHUB_OUTPUT"
           fi
 
+  # --- Securite : tourne sur toute PR, independamment des dossiers modifies ---
+
+  # Recherche de secrets dans les commits de la PR (lignes ajoutees).
+  # Binaire officiel gitleaks, verifie par somme SHA-256 avant execution.
+  secrets-scan:
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+      - name: Scan PR commits
+        # --redact : une eventuelle trouvaille n'est pas recopiee dans les logs.
+        run: |
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose --exit-code 1 \
+            --log-opts="${BASE_SHA}..${HEAD_SHA}" .
+
+  # Failles connues dans les dependances de production, bloquant a partir de
+  # "high". npm audit lit le lockfile, pas besoin de npm ci.
+  deps-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Audit backend
+        working-directory: backend
+        run: npm audit --omit=dev --audit-level=high
+      - name: Audit frontend
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
   # --- Backend : lint/typecheck -> test (vraie base Postgres) -> build ---
 
   backend-checks:
@@ -46,8 +99,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -56,6 +109,10 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
 
+  # Postgres est lance a la main (pas de "services:") pour reutiliser
+  # EXACTEMENT les memes scripts d'init que docker-compose.yml : memes roles,
+  # memes droits. Les tests tournent en lfdc_app, ce qui prouve que les
+  # droits DML suffisent a l'application.
   backend-test:
     needs: [changes, backend-checks]
     if: needs.changes.outputs.backend == 'true'
@@ -63,44 +120,68 @@ jobs:
     defaults:
       run:
         working-directory: backend
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: lfdc
-          POSTGRES_PASSWORD: changeme
-          POSTGRES_DB: le_fil_des_chapitres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U lfdc -d le_fil_des_chapitres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
     env:
       DB_HOST: localhost
       DB_PORT: 5432
-      DB_USER: lfdc
-      DB_PASSWORD: changeme
       DB_DATABASE: le_fil_des_chapitres
+      DB_USER: lfdc_app
+      DB_MIGRATION_USER: lfdc_owner
       NODE_ENV: test
       PORT: 3333
       HOST: 0.0.0.0
       LOG_LEVEL: info
       TZ: UTC
-      # Cle fixe, environnement CI ephemere : aucune donnee reelle a proteger.
-      APP_KEY: uXh4GRvtbnKBB82ul4pd_2I84bPtCQ4_
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Generate ephemeral secrets
+        # Aucune valeur en dur : secrets aleatoires propres a ce run, masques
+        # dans les logs puis exposes aux steps suivants via GITHUB_ENV.
+        run: |
+          for spec in POSTGRES_PASSWORD:32 DB_OWNER_PASSWORD:32 DB_APP_PASSWORD:32 DB_RO_PASSWORD:32 APP_KEY:16; do
+            v=$(openssl rand -hex "${spec#*:}")
+            echo "::add-mask::$v"
+            echo "${spec%%:*}=$v" >> "$GITHUB_ENV"
+            # Le backend lit DB_PASSWORD / DB_MIGRATION_PASSWORD : memes valeurs.
+            case "${spec%%:*}" in
+              DB_APP_PASSWORD) echo "DB_PASSWORD=$v" >> "$GITHUB_ENV" ;;
+              DB_OWNER_PASSWORD) echo "DB_MIGRATION_PASSWORD=$v" >> "$GITHUB_ENV" ;;
+            esac
+          done
+      - name: Start Postgres
+        # "-e VAR" sans valeur : docker reprend la valeur de l'environnement
+        # du step, le secret n'apparait pas sur la ligne de commande.
+        run: |
+          docker run -d --name postgres -p 5432:5432 \
+            -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD \
+            -e DB_OWNER_PASSWORD -e DB_APP_PASSWORD -e DB_RO_PASSWORD \
+            -v "$GITHUB_WORKSPACE/docker/postgres/init:/docker-entrypoint-initdb.d:ro" \
+            -v "$GITHUB_WORKSPACE/backend/database/sql/grants.sql:/sql/grants.sql:ro" \
+            postgres:16
+      - name: Wait for Postgres and database
+        # TCP (-h 127.0.0.1) : ne repond qu'apres la fin des scripts d'init.
+        # La connexion psql en lfdc_app verifie la base ET le role.
+        run: |
+          for _ in $(seq 1 30); do
+            if docker exec postgres pg_isready -h 127.0.0.1 -U postgres -d le_fil_des_chapitres \
+              && docker exec postgres sh -c 'PGPASSWORD="$DB_APP_PASSWORD" psql -h 127.0.0.1 -U lfdc_app -d le_fil_des_chapitres -tAc "SELECT 1"'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs postgres
+          exit 1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: node ace migration:run --force
+      - run: node ace migration:run --connection=migration --force
       - run: node ace db:seed
       - run: node ace test
+      - name: Postgres logs on failure
+        if: failure()
+        run: docker logs postgres
 
   backend-build:
     needs: [changes, backend-test]
@@ -110,8 +191,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -129,8 +210,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -147,8 +228,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -164,8 +245,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm

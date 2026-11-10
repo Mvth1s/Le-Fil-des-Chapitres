@@ -1,35 +1,78 @@
-# Environnement de developpement local. Trois services : la base Postgres,
-# le backend AdonisJS et le frontend Nuxt. Aucune configuration de production
-# ici (voir CLAUDE.md section 11 pour l'hebergement reel sur Render/Neon/Vercel).
+# Environnement de developpement local : la base Postgres, le backend
+# AdonisJS, le frontend Nuxt et Adminer. Aucune configuration de production
+# ici.
+#
+# Source unique des secrets : le fichier .env a la racine du depot (jamais
+# versionne), lu automatiquement par docker compose pour l'interpolation des
+# ${...}. Premier lancement : "cp .env.example .env", remplacer chaque
+# marqueur, puis "docker compose up". La syntaxe ${VAR:?message} fait echouer
+# compose avec un message clair si une variable manque.
 
 services:
   postgres:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_USER: lfdc
-      POSTGRES_PASSWORD: changeme
-      POSTGRES_DB: le_fil_des_chapitres
+      # Superuser, reserve a l'initialisation et a l'administration.
+      # L'application ne l'utilise jamais (voir docker/postgres/init).
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env (voir .env.example)}
+      # Mots de passe des trois roles applicatifs, lus par 01-roles.sh.
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?DB_OWNER_PASSWORD manquant dans .env (voir .env.example)}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?DB_APP_PASSWORD manquant dans .env (voir .env.example)}
+      DB_RO_PASSWORD: ${DB_RO_PASSWORD:?DB_RO_PASSWORD manquant dans .env (voir .env.example)}
     ports:
       - '5432:5432'
     volumes:
       # Volume nomme : les donnees survivent a un "docker compose down"
       # (mais pas a "docker compose down -v").
       - postgres_data:/var/lib/postgresql/data
+      # Scripts executes au PREMIER demarrage uniquement (volume vide) :
+      # creation des roles lfdc_owner / lfdc_app / lfdc_ro et de la base.
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro,Z
+      # Droits fins (DML pour app, SELECT pour ro), appeles par 01-roles.sh.
+      - ./backend/database/sql/grants.sql:/sql/grants.sql:ro,Z
     healthcheck:
       # Le backend attend cet etat "healthy" avant de demarrer (voir
-      # depends_on ci-dessous) : sans ca, AdonisJS pourrait tenter de se
-      # connecter avant que Postgres accepte des connexions.
-      test: ['CMD-SHELL', 'pg_isready -U lfdc -d le_fil_des_chapitres']
+      # depends_on ci-dessous). -h 127.0.0.1 force le TCP : pendant
+      # l'initialisation, l'image fait tourner un serveur temporaire qui
+      # n'ecoute que sur le socket Unix, donc le check ne passe qu'une fois
+      # 01-roles.sh termine et la base le_fil_des_chapitres creee.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres -d le_fil_des_chapitres']
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   backend:
     build: ./backend
     restart: unless-stopped
-    env_file:
-      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      TZ: UTC
+      HOST: 0.0.0.0
+      PORT: 3333
+      LOG_LEVEL: info
+      APP_KEY: ${APP_KEY:?APP_KEY manquant dans .env (voir .env.example)}
+      # DB_HOST=postgres : nom du service sur le reseau Docker interne.
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: le_fil_des_chapitres
+      # Compte du quotidien : DML uniquement.
+      DB_USER: lfdc_app
+      DB_PASSWORD: ${DB_APP_PASSWORD:?DB_APP_PASSWORD manquant dans .env (voir .env.example)}
+      # Compte des migrations (connexion Lucid "migration") : proprietaire.
+      DB_MIGRATION_USER: lfdc_owner
+      DB_MIGRATION_PASSWORD: ${DB_OWNER_PASSWORD:?DB_OWNER_PASSWORD manquant dans .env (voir .env.example)}
+    # Au demarrage, dans l'ordre :
+    #   1. migrations en lfdc_owner (seul compte autorise a modifier le schema),
+    #   2. seeders en lfdc_app (ils ne font que du DML, idempotents),
+    #   3. serveur de dev. "exec" lui donne le PID 1 pour recevoir les signaux
+    #      d'arret de docker directement.
+    # "&&" : si une etape echoue, le serveur ne demarre pas.
+    command:
+      - sh
+      - -c
+      - node ace migration:run --connection=migration && node ace db:seed && exec node ace serve --hmr
     ports:
       - '3333:3333'
     volumes:
@@ -48,8 +91,11 @@ services:
   frontend:
     build: ./frontend
     restart: unless-stopped
-    env_file:
-      - ./frontend/.env
+    environment:
+      # URL vue par le navigateur (hote).
+      NUXT_PUBLIC_API_BASE: http://localhost:3333/api
+      # URL utilisee cote serveur (SSR), via le reseau Docker interne.
+      NUXT_API_BASE_SERVER: http://backend:3333/api
     ports:
       - '3000:3000'
     volumes:
