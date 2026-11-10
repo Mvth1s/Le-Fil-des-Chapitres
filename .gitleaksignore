@@ -1,0 +1,3 @@
+# Faux positif : exemple de commande curl copie de la documentation officielle
+# alwaysdata (aucune cle reelle), reformule dans le commit suivant.
+bc15dbcd0af4a8d58d11eb35c8ae6658b5470f92:docs/release-0.1.0.md:curl-auth-user:72
