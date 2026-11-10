@@ -5,8 +5,8 @@ import Genre from '#models/genre'
 /**
  * Donnees de demonstration pour voir le catalogue rempli en local, sans
  * avoir a les recreer manuellement a chaque fois. Ne s'execute qu'en
- * developpement (jamais sur Render/Neon en production, voir static
- * environment ci-dessous).
+ * developpement (jamais en production, voir static environment
+ * ci-dessous).
  */
 export default class extends BaseSeeder {
   static environment = ['development']
