@@ -1,7 +1,10 @@
 <script setup lang="ts">
-// Modale accessible : focus piege, Echap et clic sur le fond ferment,
-// focus rendu au declencheur, scroll de la page bloque pendant l'ouverture.
+// Modale accessible : focus piege, Echap et clic sur le fond ferment (sauf si
+// persistent), focus rendu au declencheur, scroll de la page bloque pendant
+// l'ouverture.
 const open = defineModel<boolean>('open', { required: true })
+
+const props = withDefaults(defineProps<{ persistent?: boolean }>(), { persistent: false })
 
 const titleId = useId()
 const dialogRef = ref<HTMLElement | null>(null)
@@ -11,6 +14,7 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 function close() {
+  if (props.persistent) return
   open.value = false
 }
 
@@ -18,6 +22,8 @@ function focusables(): HTMLElement[] {
   return Array.from(dialogRef.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])
 }
 
+// Ecoute sur document et non sur le dialog : si le focus en sort (bouton
+// devenu disabled, element retire du DOM), Echap et Tab restent geres.
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     event.preventDefault()
@@ -26,21 +32,31 @@ function onKeydown(event: KeyboardEvent) {
   }
   if (event.key !== 'Tab') return
   const items = focusables()
-  if (items.length === 0) {
+  const first = items[0]
+  const last = items[items.length - 1]
+  const active = document.activeElement
+  if (!first || !last) {
     event.preventDefault()
     dialogRef.value?.focus()
     return
   }
-  const first = items[0]!
-  const last = items[items.length - 1]!
-  const active = document.activeElement
-  if (event.shiftKey && (active === first || active === dialogRef.value)) {
+  if (!dialogRef.value?.contains(active)) {
+    event.preventDefault()
+    first.focus()
+  } else if (event.shiftKey && (active === first || active === dialogRef.value)) {
     event.preventDefault()
     last.focus()
   } else if (!event.shiftKey && active === last) {
     event.preventDefault()
     first.focus()
   }
+}
+
+function release() {
+  document.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
+  previousFocus?.focus()
+  previousFocus = null
 }
 
 watch(
@@ -50,22 +66,18 @@ watch(
     if (isOpen) {
       previousFocus = document.activeElement as HTMLElement | null
       document.body.style.overflow = 'hidden'
+      document.addEventListener('keydown', onKeydown)
       await nextTick()
       ;(focusables()[0] ?? dialogRef.value)?.focus()
     } else {
-      document.body.style.overflow = ''
-      previousFocus?.focus()
-      previousFocus = null
+      release()
     }
   },
   { immediate: true }
 )
 
 onBeforeUnmount(() => {
-  if (open.value) {
-    document.body.style.overflow = ''
-    previousFocus?.focus()
-  }
+  if (open.value) release()
 })
 </script>
 
@@ -79,7 +91,6 @@ onBeforeUnmount(() => {
         aria-modal="true"
         :aria-labelledby="titleId"
         tabindex="-1"
-        @keydown="onKeydown"
       >
         <h2 :id="titleId" class="app-modal__title">
           <slot name="title" />

@@ -38,12 +38,15 @@ withDefaults(
   border: 2px solid transparent;
 }
 
-.app-button:disabled {
+/* aria-disabled : desactive sans perdre le focus (ex. bouton de confirmation
+   d'une modale pendant la requete). Le clic doit etre bloque par l'appelant. */
+.app-button:disabled,
+.app-button[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.app-button:not(:disabled):hover {
+.app-button:not(:disabled):not([aria-disabled='true']):hover {
   opacity: 0.85;
 }
 

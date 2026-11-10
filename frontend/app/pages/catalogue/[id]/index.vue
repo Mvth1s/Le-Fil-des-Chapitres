@@ -24,6 +24,9 @@ const confirmOpen = ref(false)
 const toast = useToast()
 
 async function handleDelete() {
+  // Garde contre le double clic : le bouton utilise aria-disabled (et non
+  // disabled) pour conserver le focus pendant la requete.
+  if (deleting.value) return
   deleting.value = true
   try {
     await $fetch(`${apiBase}/webtoons/${webtoonId}`, { method: 'DELETE' })
@@ -80,17 +83,27 @@ async function handleDelete() {
       </a>
     </article>
 
-    <AppModal v-model:open="confirmOpen">
+    <AppModal v-model:open="confirmOpen" :persistent="deleting">
       <template #title>Supprimer ce webtoon ?</template>
       <p>
         {{ webtoon?.title }} sera retire definitivement du catalogue, ainsi que des listes de
         lecture qui le contiennent.
       </p>
       <template #actions>
-        <AppButton variant="outline" size="sm" :disabled="deleting" @click="confirmOpen = false">
+        <AppButton
+          variant="outline"
+          size="sm"
+          :aria-disabled="deleting"
+          @click="!deleting && (confirmOpen = false)"
+        >
           Annuler
         </AppButton>
-        <AppButton variant="secondary" size="sm" :disabled="deleting" @click="handleDelete">
+        <AppButton
+          variant="secondary"
+          size="sm"
+          :aria-disabled="deleting"
+          @click="handleDelete"
+        >
           {{ deleting ? 'Suppression...' : 'Supprimer' }}
         </AppButton>
       </template>

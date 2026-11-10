@@ -2,15 +2,33 @@
 // A monter une seule fois (app.vue). Les regions live existent des le rendu
 // initial : un lecteur d'ecran n'annonce que les changements d'une region
 // deja presente dans le DOM.
-const { toasts, dismiss } = useToast()
+const { toasts, dismiss, pause, resume } = useToast()
+
+// focusout vers un autre element de la zone ne doit pas relancer les minuteurs.
+function onFocusout(event: FocusEvent) {
+  const container = event.currentTarget as HTMLElement
+  if (!container.contains(event.relatedTarget as Node | null)) resume()
+}
 
 const successToasts = computed(() => toasts.value.filter((toast) => toast.type === 'success'))
 const errorToasts = computed(() => toasts.value.filter((toast) => toast.type === 'error'))
 </script>
 
 <template>
-  <div class="app-toast__container">
-    <div aria-live="assertive" role="alert" class="app-toast__region">
+  <div
+    class="app-toast__container"
+    @mouseenter="pause"
+    @mouseleave="resume"
+    @focusin="pause"
+    @focusout="onFocusout"
+  >
+    <div
+      aria-live="assertive"
+      aria-atomic="false"
+      aria-relevant="additions"
+      role="alert"
+      class="app-toast__region"
+    >
       <div v-for="toast in errorToasts" :key="toast.id" class="app-toast is-error">
         <p class="app-toast__message">{{ toast.message }}</p>
         <button
@@ -23,7 +41,13 @@ const errorToasts = computed(() => toasts.value.filter((toast) => toast.type ===
         </button>
       </div>
     </div>
-    <div aria-live="polite" role="status" class="app-toast__region">
+    <div
+      aria-live="polite"
+      aria-atomic="false"
+      aria-relevant="additions"
+      role="status"
+      class="app-toast__region"
+    >
       <div v-for="toast in successToasts" :key="toast.id" class="app-toast is-success">
         <p class="app-toast__message">{{ toast.message }}</p>
         <button
@@ -93,6 +117,12 @@ const errorToasts = computed(() => toasts.value.filter((toast) => toast.type ===
 
 .app-toast__close {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Cible tactile minimale WCAG 2.5.8 (24x24 px). */
+  min-width: 24px;
+  min-height: 24px;
   padding: 0 var(--spacing-xs);
   background: transparent;
   border: none;
