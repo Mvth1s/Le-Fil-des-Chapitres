@@ -1,12 +1,12 @@
 # Image de developpement pour le frontend Nuxt.
 # Comme pour le backend, le code source est monte en volume depuis l'hote ;
 # ce Dockerfile fige seulement l'environnement Node et les dependances.
-FROM node:22-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 

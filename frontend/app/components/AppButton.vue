@@ -72,7 +72,7 @@ withDefaults(
  * dessous des 4.5:1 requis en texte courant mais conforme au seuil "grand
  * texte" (3:1) grace a is-md (19px gras, cf. ci-dessus). Ne pas utiliser
  * is-primary avec is-sm (14px) : le contraste ne serait plus conforme.
- * Decision actee avec Mathis a l'etape 5 : limite acceptee pour le MVP,
+ * Decision actee avec Mvth1s a l'etape 5 : limite acceptee pour le MVP,
  * usage restreint aux boutons de taille normale/grande.
  */
 .is-primary {

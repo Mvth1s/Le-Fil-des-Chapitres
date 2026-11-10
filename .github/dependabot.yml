@@ -1,0 +1,23 @@
+# Mises a jour automatiques des dependances : une PR par mise a jour,
+# chaque semaine, en nombre limite pour rester relisible.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Actions GitHub epinglees par SHA dans .github/workflows : Dependabot met
+  # a jour le SHA et le tag en commentaire.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
