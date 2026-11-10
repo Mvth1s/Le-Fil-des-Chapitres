@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const inputValue = ref('')
 const selectValue = ref('reading')
+const modalOpen = ref(false)
+const toast = useToast()
 
 const statusOptions = [
   { label: 'En cours', value: 'reading' },
@@ -62,6 +64,31 @@ const statusOptions = [
           <AppButton size="sm" variant="outline">Voir la fiche</AppButton>
         </template>
       </AppCard>
+    </section>
+
+    <section>
+      <h2>Modale</h2>
+      <AppButton variant="outline" @click="modalOpen = true">Ouvrir la modale</AppButton>
+      <AppModal v-model:open="modalOpen">
+        <template #title>Titre de la modale</template>
+        <p>Échap, clic sur le fond ou Annuler ferment la modale. Le focus reste piégé dedans.</p>
+        <template #actions>
+          <AppButton variant="outline" size="sm" @click="modalOpen = false">Annuler</AppButton>
+          <AppButton variant="secondary" size="sm" @click="modalOpen = false">Confirmer</AppButton>
+        </template>
+      </AppModal>
+    </section>
+
+    <section>
+      <h2>Messages (toasts)</h2>
+      <div class="row">
+        <AppButton variant="outline" @click="toast.success('Opération réussie.')">
+          Toast de succès
+        </AppButton>
+        <AppButton variant="outline" @click="toast.error('Une erreur est survenue.')">
+          Toast d'erreur
+        </AppButton>
+      </div>
     </section>
   </main>
 </template>

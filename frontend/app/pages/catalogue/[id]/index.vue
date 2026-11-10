@@ -20,15 +20,18 @@ const {
 })
 
 const deleting = ref(false)
+const confirmOpen = ref(false)
+const toast = useToast()
 
 async function handleDelete() {
-  if (!confirm('Supprimer definitivement ce webtoon du catalogue ?')) {
-    return
-  }
   deleting.value = true
   try {
     await $fetch(`${apiBase}/webtoons/${webtoonId}`, { method: 'DELETE' })
+    confirmOpen.value = false
+    toast.success('Webtoon supprime du catalogue.')
     await router.push('/catalogue')
+  } catch {
+    toast.error('La suppression a echoue. Reessaie dans un instant.')
   } finally {
     deleting.value = false
   }
@@ -56,7 +59,7 @@ async function handleDelete() {
           <NuxtLink :to="`/catalogue/${webtoonId}/edit`">
             <AppButton variant="outline" size="sm">Modifier</AppButton>
           </NuxtLink>
-          <AppButton variant="ghost" size="sm" :disabled="deleting" @click="handleDelete">
+          <AppButton variant="ghost" size="sm" :disabled="deleting" @click="confirmOpen = true">
             Supprimer
           </AppButton>
         </div>
@@ -76,6 +79,22 @@ async function handleDelete() {
         <AppButton variant="outline">Lire ce webtoon</AppButton>
       </a>
     </article>
+
+    <AppModal v-model:open="confirmOpen">
+      <template #title>Supprimer ce webtoon ?</template>
+      <p>
+        {{ webtoon?.title }} sera retire definitivement du catalogue, ainsi que des listes de
+        lecture qui le contiennent.
+      </p>
+      <template #actions>
+        <AppButton variant="outline" size="sm" :disabled="deleting" @click="confirmOpen = false">
+          Annuler
+        </AppButton>
+        <AppButton variant="secondary" size="sm" :disabled="deleting" @click="handleDelete">
+          {{ deleting ? 'Suppression...' : 'Supprimer' }}
+        </AppButton>
+      </template>
+    </AppModal>
   </main>
 </template>
 
