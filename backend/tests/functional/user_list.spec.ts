@@ -1,7 +1,9 @@
 import { test } from '@japa/runner'
 import type { Group } from '@japa/runner/core'
+import type { ApiClient, ApiRequest } from '@japa/api-client'
 import { DateTime } from 'luxon'
 import db from '@adonisjs/lucid/services/db'
+import Genre from '#models/genre'
 import UserWebtoon, { type UserWebtoonStatus } from '#models/user_webtoon'
 import Webtoon from '#models/webtoon'
 import { getCurrentUser } from '#services/current_user'
@@ -23,10 +25,17 @@ function isolateEachTest(group: Group) {
 async function createEntry(
   webtoon: Webtoon,
   status: UserWebtoonStatus = 'plan_to_read',
-  chaptersRead = 0
+  chaptersRead = 0,
+  extra: Partial<Pick<UserWebtoon, 'startedAt' | 'finishedAt'>> = {}
 ) {
   const user = await getCurrentUser()
-  return UserWebtoon.create({ userId: user.id, webtoonId: webtoon.id, status, chaptersRead })
+  return UserWebtoon.create({
+    userId: user.id,
+    webtoonId: webtoon.id,
+    status,
+    chaptersRead,
+    ...extra,
+  })
 }
 
 const today = () => DateTime.now().toISODate()
@@ -39,6 +48,8 @@ test.group('User list API - lecture et creation', (group) => {
     assert,
   }) => {
     const webtoon = await Webtoon.create({ title: 'Liste GET', author: 'Test' })
+    const genre = await Genre.findByOrFail('slug', 'action')
+    await webtoon.related('genres').attach([genre.id])
     const entry = await createEntry(webtoon)
 
     const response = await client.get('/api/user/list')
@@ -47,7 +58,10 @@ test.group('User list API - lecture et creation', (group) => {
     const found = response.body().find((row: { id: string }) => row.id === entry.id)
     assert.exists(found)
     assert.equal(found.webtoon.title, 'Liste GET')
-    assert.isArray(found.webtoon.genres)
+    assert.deepEqual(
+      found.webtoon.genres.map((g: { slug: string }) => g.slug),
+      ['action']
+    )
   })
 
   test('POST /api/user/list cree une entree (201) avec chaptersRead a 0 par defaut', async ({
@@ -67,6 +81,9 @@ test.group('User list API - lecture et creation', (group) => {
     assert.strictEqual(response.body().rating, 7.5)
     assert.equal(response.body().comment, 'A lire')
     assert.equal(response.body().webtoon.title, 'Liste POST')
+    // Seul le statut reading pose startedAt : rien en plan_to_read.
+    assert.isNull(response.body().startedAt)
+    assert.isNull(response.body().finishedAt)
     assert.exists(await UserWebtoon.find(response.body().id))
   })
 
@@ -101,6 +118,24 @@ test.group('User list API - lecture et creation', (group) => {
     assert.equal(response.body().finishedAt, today())
   })
 
+  test('POST /api/user/list conserve un finishedAt explicite en completed', async ({
+    client,
+    assert,
+  }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste POST finishedAt', author: 'Test' })
+
+    const response = await client
+      .post('/api/user/list')
+      .json({ webtoonId: webtoon.id, status: 'completed', finishedAt: '2026-03-01' })
+
+    response.assertStatus(201)
+    assert.equal(response.body().status, 'completed')
+    assert.equal(response.body().finishedAt, '2026-03-01')
+  })
+
+  // 422 est le contrat actuel (WebtoonAlreadyInListException.status), il
+  // n'est pas fixe par le cahier des charges : un passage a 409 serait un
+  // choix d'API a valider, puis a repercuter ici.
   test('POST /api/user/list refuse un doublon (422)', async ({ client, assert }) => {
     const webtoon = await Webtoon.create({ title: 'Liste doublon', author: 'Test' })
     await createEntry(webtoon)
@@ -260,6 +295,85 @@ test.group('User list API - mise a jour (PUT)', (group) => {
     response.assertStatus(200)
     assert.equal(response.body().status, 'completed')
     assert.equal(response.body().finishedAt, today())
+  })
+
+  test('PUT /api/user/list/:id conserve un finishedAt explicite en completed', async ({
+    client,
+    assert,
+  }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste PUT finishedAt', author: 'Test' })
+    const entry = await createEntry(webtoon, 'reading', 3)
+
+    const response = await client
+      .put(`/api/user/list/${entry.id}`)
+      .json({ status: 'completed', finishedAt: '2026-03-01' })
+
+    response.assertStatus(200)
+    assert.equal(response.body().status, 'completed')
+    assert.equal(response.body().finishedAt, '2026-03-01')
+  })
+
+  test('PUT /api/user/list/:id conserve un startedAt explicite en reading', async ({
+    client,
+    assert,
+  }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste PUT startedAt explicite', author: 'Test' })
+    const entry = await createEntry(webtoon, 'plan_to_read')
+
+    const response = await client
+      .put(`/api/user/list/${entry.id}`)
+      .json({ status: 'reading', startedAt: '2026-02-01' })
+
+    response.assertStatus(200)
+    assert.equal(response.body().startedAt, '2026-02-01')
+  })
+
+  test('PUT /api/user/list/:id conserve un startedAt deja present en reading', async ({
+    client,
+    assert,
+  }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste PUT startedAt present', author: 'Test' })
+    const entry = await createEntry(webtoon, 'on_hold', 2, {
+      startedAt: DateTime.fromISO('2026-01-10'),
+    })
+
+    const response = await client.put(`/api/user/list/${entry.id}`).json({ status: 'reading' })
+
+    response.assertStatus(200)
+    assert.equal(response.body().status, 'reading')
+    assert.equal(response.body().startedAt, '2026-01-10')
+  })
+
+  test('PUT /api/user/list/:id force completed meme si un autre statut est envoye avec le dernier chapitre', async ({
+    client,
+    assert,
+  }) => {
+    const webtoon = await Webtoon.create({
+      title: 'Liste PUT ordre des regles',
+      author: 'Test',
+      chaptersTotal: 30,
+    })
+    const entry = await createEntry(webtoon, 'reading', 10)
+
+    const response = await client
+      .put(`/api/user/list/${entry.id}`)
+      .json({ status: 'on_hold', chaptersRead: 30 })
+
+    response.assertStatus(200)
+    assert.equal(response.body().status, 'completed')
+    assert.equal(response.body().finishedAt, today())
+  })
+
+  test('PUT /api/user/list/:id prend en compte chaptersRead a 0', async ({ client, assert }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste PUT zero', author: 'Test' })
+    const entry = await createEntry(webtoon, 'reading', 5)
+
+    const response = await client.put(`/api/user/list/${entry.id}`).json({ chaptersRead: 0 })
+
+    response.assertStatus(200)
+    assert.equal(response.body().chaptersRead, 0)
+    await entry.refresh()
+    assert.equal(entry.chaptersRead, 0)
   })
 
   test('PUT /api/user/list/:id refuse chaptersRead au-dela de chaptersTotal (422)', async ({
@@ -436,4 +550,28 @@ test.group('User list API - progression (PATCH) et suppression', (group) => {
 
     response.assertStatus(404)
   })
+})
+
+/**
+ * BUG CONNU : un id non UUID dans l'URL est passe tel quel a Postgres, qui
+ * rejette la comparaison avec la colonne uuid ; l'API renvoie 500 au lieu de
+ * 404. Les tests decrivent le comportement attendu et sont marques
+ * .fails() pour ne pas bloquer la CI : quand le controller sera corrige,
+ * Japa signalera ces tests comme en echec, il suffira de retirer .fails().
+ */
+test.group('User list API - id non UUID', (group) => {
+  isolateEachTest(group)
+
+  const requests: Array<[string, (client: ApiClient) => ApiRequest]> = [
+    ['PUT', (client) => client.put('/api/user/list/abc').json({ status: 'reading' })],
+    ['PATCH', (client) => client.patch('/api/user/list/abc/progress').json({ chaptersRead: 1 })],
+    ['DELETE', (client) => client.delete('/api/user/list/abc')],
+  ]
+  for (const [method, send] of requests) {
+    test(`${method} /api/user/list/abc renvoie 404`, async ({ client }) => {
+      const response = await send(client)
+
+      response.assertStatus(404)
+    }).fails('bug connu : id non UUID renvoie 500 au lieu de 404')
+  }
 })

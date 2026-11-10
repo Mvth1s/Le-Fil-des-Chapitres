@@ -11,11 +11,15 @@ import { getCurrentUser } from '#services/current_user'
  * l'utilisateur courant, pour ne dependre d'aucune donnee preexistante.
  */
 test.group('Stats API', (group) => {
+  // Deux hooks distincts : le rollback est enregistre des l'ouverture de la
+  // transaction, meme si la preparation qui suit echoue.
   group.each.setup(async () => {
     await db.beginGlobalTransaction()
+    return () => db.rollbackGlobalTransaction()
+  })
+  group.each.setup(async () => {
     const user = await getCurrentUser()
     await UserWebtoon.query().where('userId', user.id).delete()
-    return () => db.rollbackGlobalTransaction()
   })
 
   test('GET /api/stats renvoie des compteurs a zero pour une liste vide', async ({
