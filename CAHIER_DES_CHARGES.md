@@ -263,13 +263,13 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 ```
 ┌─────────────────────────────────────────────┐
 │                   CLIENT                    │
-│              Nuxt 3 (Vue 3)                 │
+│              Nuxt 4 (Vue 3)                 │
 │         Interface utilisateur web           │
 └─────────────────┬───────────────────────────┘
                   │ HTTP / REST API (JSON)
 ┌─────────────────▼───────────────────────────┐
 │                  SERVEUR                    │
-│                AdonisJS 6                   │
+│                AdonisJS 7                   │
 │        API REST + Logique métier            │
 └─────────────────┬───────────────────────────┘
                   │ Requêtes SQL (via Lucid ORM)
@@ -279,24 +279,25 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 │           Stockage persistant               │
 └─────────────────────────────────────────────┘
 
-      Tous les services tournent dans Docker
+      En local, tous les services tournent dans Docker.
+      En production : Vercel (frontend), alwaysdata (backend et PostgreSQL).
 ```
 
 ### Stack technologique
 
 | Couche | Technologie | Version | Rôle |
 |---|---|---|---|
-| **Frontend** | Nuxt 3 | 3.x | Framework Vue.js avec SSR, routing, et gestion d'état |
+| **Frontend** | Nuxt 4 | 4.x | Framework Vue.js avec SSR, routing, et gestion d'état |
 | **UI** | Vue 3 | 3.x | Composants réactifs |
-| **Backend** | AdonisJS | 6.x | Framework Node.js MVC, gestion des routes API |
-| **ORM** | Lucid (natif Adonis) | 6.x | Communication avec PostgreSQL en TypeScript |
+| **Backend** | AdonisJS | 7.x (Node.js 24) | Framework Node.js MVC, gestion des routes API |
+| **ORM** | Lucid (natif Adonis) | 22.x | Communication avec PostgreSQL en TypeScript |
 | **Base de données** | PostgreSQL | 16.x | Stockage relationnel des données |
 | **Conteneurisation** | Docker + Docker Compose | — | Déploiement et isolation des services |
 | **Langage** | TypeScript | 5.x | Typage statique côté frontend et backend |
 
 ### Justification des choix
 
-**Nuxt 3** — SSR natif, routing intégré, excellent support TypeScript, adapté à une application de taille moyenne avec des pages de listes et des formulaires.
+**Nuxt 4** — SSR natif, routing intégré, excellent support TypeScript, adapté à une application de taille moyenne avec des pages de listes et des formulaires.
 
 **AdonisJS** — Framework structuré (MVC) qui impose de bonnes pratiques sans être aussi complexe que NestJS. Inclut nativement : ORM (Lucid), validation, gestion des migrations, authentification. Idéal pour un développeur junior qui veut construire proprement.
 
@@ -305,6 +306,20 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 **PostgreSQL** — Base de données relationnelle robuste, référence de l'industrie, parfaitement adaptée aux données structurées du projet (webtoons, genres, listes).
 
 **Docker + Docker Compose** — Permet de lancer l'application complète (frontend, backend, base de données) avec une seule commande, sur n'importe quelle machine. Indispensable pour l'auto-hébergement.
+
+### Hébergement de production
+
+| Service | Plateforme | Détail |
+|---|---|---|
+| Frontend | Vercel Hobby | Région `cdg1`, déploiement par l'intégration Git native |
+| Backend | alwaysdata, offre Free | Site Node.js (1 Go disque, 256 Mo RAM, usage personnel non lucratif) |
+| Base de données | PostgreSQL alwaysdata | Même compte que le backend |
+
+**Protection de l'instance publique.** Le navigateur ne parle qu'au frontend. Toutes les requêtes `/api/**` passent par une route serveur Nitro (proxy) qui les relaie au backend en ajoutant un en-tête `X-Api-Key`. Le frontend entier est protégé par HTTP Basic Auth. Le backend exige `X-Api-Key` en production. `GET /health` est public et n'expose aucune information sensible.
+
+> Ce n'est pas une authentification utilisateur : pas de JWT, de session ni de page de login. L'authentification réelle reste en Phase 3.
+
+Détails opérationnels : `docs/DEPLOIEMENT.md` et `docs/SECURITE.md`.
 
 ---
 
@@ -360,7 +375,7 @@ Le projet repose sur une séparation claire entre :
 | `created_at` | TIMESTAMP | NOT NULL | Date de création |
 | `updated_at` | TIMESTAMP | NOT NULL | Date de dernière modification |
 
-> **Note Phase 1 :** En mono-utilisateur, un seul enregistrement existera dans cette table. La structure est prête pour le multi-utilisateurs.
+> **Note Phase 1 :** En mono-utilisateur, un seul enregistrement existera dans cette table. La structure est prête pour le multi-utilisateurs. En production, cet utilisateur unique est créé par un seeder de bootstrap idempotent (`APP_OWNER_USERNAME`, `APP_OWNER_PASSWORD`), qui garantit aussi les 14 genres et s'exécute à chaque déploiement.
 
 ---
 
@@ -463,7 +478,7 @@ Le projet repose sur une séparation claire entre :
 
 ## 10. Structure de l'application
 
-### Routes frontend (Nuxt 3)
+### Routes frontend (Nuxt 4)
 
 | Route | Page | Description |
 |---|---|---|
@@ -527,10 +542,15 @@ Le projet repose sur une séparation claire entre :
 
 ### Sécurité
 
+- Aucun secret en dur dans le code ou le dépôt : variables d'environnement uniquement
 - Les mots de passe sont **hashés avec bcrypt** (jamais stockés en clair)
-- Les variables sensibles (clés, mots de passe BDD) sont stockées dans un fichier **`.env`** non versionné
-- Le fichier `.env` est présent dans le `.gitignore`
+- Les variables sensibles sont stockées dans un fichier **`.env`** non versionné, présent dans le `.gitignore`
+- Trois comptes PostgreSQL distincts : `_owner` (migrations, GRANT, bootstrap ; mot de passe uniquement dans l'environnement GitHub `production`), `_app` (DML seul, utilisé par le backend), `_ro` (lecture seule, consultation et sauvegardes)
+- Instance publique protégée : proxy Nitro, HTTP Basic Auth sur le frontend, en-tête `X-Api-Key` exigé par le backend en production (voir section 7)
+- En-têtes de sécurité HTTP et CORS en liste blanche
+- `npm audit` et gitleaks bloquants en CI, dependabot activé
 - Les entrées utilisateur sont **validées et assainies** côté serveur avant traitement
+- Politique détaillée : `docs/SECURITE.md`
 
 ### Maintenabilité
 
@@ -543,6 +563,8 @@ Le projet repose sur une séparation claire entre :
 - L'application doit pouvoir être lancée avec la commande **`docker-compose up`**
 - Les migrations de base de données doivent s'exécuter **automatiquement** au démarrage
 - L'environnement de développement et de production sont séparés via des fichiers `.env` distincts
+- En production, le backend est déployé par un workflow GitHub (`deploy-backend.yml`, SSH/rsync, releases et lien `current`) et le frontend par l'intégration Git de Vercel
+- Les seeders de bootstrap (utilisateur unique, 14 genres) s'exécutent à chaque déploiement
 
 ---
 
@@ -552,7 +574,7 @@ Le projet repose sur une séparation claire entre :
 
 > Objectif : avoir une application fonctionnelle pour un usage personnel solo.
 
-- [ ] Mise en place du projet (Nuxt 3 + AdonisJS + PostgreSQL + Docker)
+- [ ] Mise en place du projet (Nuxt 4 + AdonisJS + PostgreSQL + Docker)
 - [ ] Création du schéma de base de données et des migrations
 - [ ] API REST : CRUD complet sur les webtoons
 - [ ] API REST : gestion de la liste de lecture

@@ -6,10 +6,10 @@
 
 **Suivez, organisez et gérez votre lecture de webtoons.**
 
-[![Version](https://img.shields.io/badge/version-0.1.0--dev-blue?style=flat-square)](https://github.com/ton-username/le-fil-des-chapitres)
+[![Version](https://img.shields.io/badge/version-0.1.0--dev-blue?style=flat-square)](https://github.com/Mvth1s/Le-Fil-des-Chapitres)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-green?style=flat-square)](LICENSE)
-[![Nuxt 3](https://img.shields.io/badge/Nuxt-3.x-00DC82?style=flat-square&logo=nuxt.js)](https://nuxt.com)
-[![AdonisJS](https://img.shields.io/badge/AdonisJS-6.x-5A45FF?style=flat-square)](https://adonisjs.com)
+[![Nuxt 4](https://img.shields.io/badge/Nuxt-4.x-00DC82?style=flat-square&logo=nuxt.js)](https://nuxt.com)
+[![AdonisJS](https://img.shields.io/badge/AdonisJS-7.x-5A45FF?style=flat-square)](https://adonisjs.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker)](https://www.docker.com)
 
@@ -41,8 +41,8 @@
 
 | Couche | Technologie |
 |---|---|
-| Frontend | [Nuxt 3](https://nuxt.com) (Vue 3 + TypeScript) |
-| Backend | [AdonisJS 6](https://adonisjs.com) (Node.js + TypeScript) |
+| Frontend | [Nuxt 4](https://nuxt.com) (Vue 3 + TypeScript) |
+| Backend | [AdonisJS 7](https://adonisjs.com) (Node.js 24 + TypeScript) |
 | ORM | [Lucid](https://lucid.adonisjs.com) (natif AdonisJS) |
 | Base de données | [PostgreSQL 16](https://www.postgresql.org) |
 | Conteneurisation | [Docker](https://www.docker.com) + Docker Compose |
@@ -60,34 +60,33 @@
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/ton-username/le-fil-des-chapitres.git
-cd le-fil-des-chapitres
+git clone https://github.com/Mvth1s/Le-Fil-des-Chapitres.git
+cd Le-Fil-des-Chapitres
 
 # 2. Copier le fichier de configuration
 cp .env.example .env
-
-# 3. Lancer l'application
-docker-compose up
 ```
 
-L'application est disponible sur [http://localhost:3000](http://localhost:3000).
+Éditez `.env` et remplacez chaque marqueur `<...>` par une valeur générée :
 
-### Configuration
-
-Éditez le fichier `.env` selon vos besoins :
-
-```env
-# Base de données
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=lfdc
-DB_PASSWORD=votre_mot_de_passe
-DB_DATABASE=le_fil_des_chapitres
-
-# Application
-APP_KEY=votre_clé_secrète
-NODE_ENV=development
+```bash
+openssl rand -hex 32   # POSTGRES_PASSWORD, DB_OWNER_PASSWORD, DB_APP_PASSWORD, DB_RO_PASSWORD
+openssl rand -hex 16   # APP_KEY
 ```
+
+Puis lancez l'application :
+
+```bash
+docker compose up
+```
+
+Les migrations (compte `lfdc_owner`), puis les seeders et le serveur (compte `lfdc_app`), s'exécutent automatiquement. L'application est disponible sur [http://localhost:3000](http://localhost:3000).
+
+> Si vous aviez un volume local créé avant ce changement des comptes PostgreSQL : `docker compose down -v` (base locale uniquement), puis relancez.
+
+### Lancement hors Docker
+
+Copiez `backend/.env.example` en `backend/.env` et adaptez-le, puis lancez le backend (`node ace serve --hmr`) et le frontend (`npm run dev`) depuis leur dossier respectif.
 
 ---
 
@@ -95,11 +94,12 @@ NODE_ENV=development
 
 ```
 le-fil-des-chapitres/
-├── frontend/               # Application Nuxt 3
-│   ├── components/         # Composants Vue réutilisables
-│   ├── pages/              # Pages et routes
-│   ├── composables/        # Logique réutilisable (Vue)
-│   └── assets/             # Styles, polices, images
+├── frontend/               # Application Nuxt 4
+│   └── app/
+│       ├── components/     # Composants Vue réutilisables
+│       ├── pages/          # Pages et routes
+│       ├── composables/    # Logique réutilisable (Vue)
+│       └── assets/         # Styles, polices, images
 │
 ├── backend/                # API AdonisJS
 │   ├── app/
@@ -122,6 +122,8 @@ le-fil-des-chapitres/
 ## 📖 Documentation
 
 - [Cahier des charges](CAHIER_DES_CHARGES.md) — Spécifications complètes du projet
+- [Déploiement](docs/DEPLOIEMENT.md) *(à venir)*: Hébergement alwaysdata et Vercel
+- [Sécurité](docs/SECURITE.md) *(à venir)*: Politique de sécurité
 - [API Reference](docs/api.md) *(à venir)* — Documentation des endpoints
 - [Guide de contribution](CONTRIBUTING.md) *(à venir)*
 

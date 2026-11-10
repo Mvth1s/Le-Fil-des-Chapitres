@@ -6,7 +6,7 @@ Si une session s'interrompt, la suivante repart d'ici.
 ## Avancement par lot
 
 - [x] Lot 1 : audit et vérification des hypothèses (rapport sécurité : `docs/audits/securite-2026-11-10-lot1.md`)
-- [ ] Lot 2 : `fix/security-baseline-secrets` (testé sur clone propre : compose up OK, rôles owner/app/ro, CRUD via `_app`)
+- [x] Lot 2 : `fix/security-baseline-secrets` (PR #18) (testé sur clone propre : compose up OK, rôles owner/app/ro, CRUD via `_app`)
 - [ ] Lot 3 : `docs/agents-and-alignment`
 - [ ] Lot 4 : fonctionnalités manquantes
 - [ ] Lot 5 : `test/backend-reading-list-and-stats`
@@ -20,6 +20,19 @@ Si une session s'interrompt, la suivante repart d'ici.
 | `auditeur-fonctionnel` | Lot 1 | Comparer l'appli réelle aux US du cahier |
 | `verificateur-hypotheses` | Lot 1 | Vérifier les hypothèses H1 à H12 |
 | `auditeur-securite` | Lot 1 | Auditer le dépôt contre le socle de sécurité |
+| `testeur-backend` | Lot 3 | Écrire les tests fonctionnels Japa |
+| `testeur-frontend` | Lot 3 | Écrire les tests Vitest |
+| `gardien-securite-doc` | Lot 3 | Tenir `docs/SECURITE.md` |
+
+Agents existants mis en conformité au lot 3 : `backend-adonisjs`, `frontend-nuxt`,
+`deploiement`, `code-reviewer`, `docs-keeper`. Écarts au tableau 2.3 du prompt :
+- `backend-adonisjs` couvre aussi `backend/ace.js`, `adonisrc.ts`, `tsconfig.json`,
+  `eslint.config.js` et `bin/**` (configuration du framework, sans propriétaire sinon ;
+  nécessaire à la migration AdonisJS 7).
+- `deploiement` couvre aussi `.gitleaksignore`.
+- `docs-keeper` exclut `CLAUDE.md` (interdit commun) et `docs/release-*.md` (fichier de
+  l'orchestrateur et des auditeurs). Les modifications de `CLAUDE.md` et des fichiers
+  d'agents sont faites par l'orchestrateur.
 
 Note : au lot 1, les trois agents n'étaient pas encore chargés nativement ; ils ont été
 lancés via un agent générique appliquant leur fichier de rôle. Ils sont natifs ensuite.
@@ -119,4 +132,6 @@ Toutes consultées le 2026-11-10.
   faits sur GitHub ne réintroduisent pas le nom réel.
 - Identité Git locale : nom `Mvth1s` correct, adresse en alias `+github` de la boîte
   pseudonyme (écart mineur avec l'adresse de contact `+lfdc`).
-
+- Tirets cadratins hérités (antérieurs à la mission) : 31 dans `CAHIER_DES_CHARGES.md`,
+  14 dans `README.md`. Non modifiés (hors périmètre, modification minimale) ; les fichiers
+  produits pendant la mission n'en contiennent aucun. Nettoyage à décider par Mvth1s.
