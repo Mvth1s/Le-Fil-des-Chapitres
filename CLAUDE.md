@@ -22,8 +22,9 @@ Licence MIT. Version courante : 0.1.0 (en développement).
 | Couche | Techno | Version |
 |---|---|---|
 | Frontend | Nuxt (Vue 3) | 4.x |
-| Backend | AdonisJS | 6.x |
-| ORM | Lucid | 21.x |
+| Backend | AdonisJS | 7.x |
+| ORM | Lucid | 22.x |
+| Runtime | Node.js | 24 LTS |
 | Base de données | PostgreSQL | 16.x |
 | Langage | TypeScript | 5.x |
 | Dev local | Docker + Docker Compose | - |
@@ -37,7 +38,7 @@ Pas de React, pas de Prisma, pas de NestJS. Ces choix ont été arbitrés et son
 ```
 /
 ├── frontend/          Nuxt 4
-├── backend/           AdonisJS 6
+├── backend/           AdonisJS 7
 ├── docker-compose.yml
 ├── CLAUDE.md
 ├── CAHIER_DES_CHARGES.md
@@ -60,6 +61,12 @@ Pas de React, pas de Prisma, pas de NestJS. Ces choix ont été arbitrés et son
 3. **Multi-utilisateurs anticipé, pas implémenté.** Le schéma est prêt (table `users`,
    contrainte unique sur `user_webtoons(user_id, webtoon_id)`), mais l'authentification est
    hors périmètre de la phase 1. Ne pas ajouter de JWT, de middleware d'auth ou de page de login.
+   **Exception (protection de l'instance publique, ce n'est pas une auth utilisateur) :**
+   le navigateur ne parle qu'au frontend ; les requêtes `/api/**` passent par un proxy
+   Nitro qui ajoute un en-tête `X-Api-Key` exigé par le backend en production ; le frontend
+   entier est derrière une HTTP Basic Auth (identifiants en variables d'environnement).
+   `GET /health` reste public. Pas de session, pas de JWT, pas de page de login.
+   (Mis en place à l'étape 11 de la roadmap.)
 4. **TypeScript partout.** Pas de fichier `.js` dans `frontend/` ni `backend/`.
 5. **Validation systématique côté serveur** avant tout accès à la base (validators AdonisJS).
 
@@ -161,7 +168,7 @@ Ne jamais introduire une couleur ou une police hors de cette liste sans validati
 
 ## 9. Git
 
-**Branches :** `main` (stable) et `develop` (intégration). Jamais de commit direct sur `main`.
+**Branches :** `main` (stable) et `dev` (intégration). Jamais de commit direct sur `main`.
 Préfixes : `feature/`, `fix/`, `style/`, `chore/`, `refactor/`, `deploy/`.
 
 **Commits :** `type: description courte en minuscules`
@@ -175,13 +182,13 @@ Une branche par étape de la roadmap. Fusion uniquement quand la condition
 ## 10. Commandes utiles
 
 ```bash
-# Environnement complet
+# Environnement complet (après cp .env.example .env et génération des valeurs)
 docker compose up
 
 # Backend (depuis backend/)
 node ace serve --hmr
-node ace migration:run
-node ace migration:rollback
+node ace migration:run --connection=migration      # compte _owner, seul autorisé au DDL
+node ace migration:rollback --connection=migration
 node ace db:seed
 node ace make:controller Webtoons
 node ace make:validator webtoon
@@ -196,21 +203,21 @@ npm run build
 
 ## 11. Hébergement
 
-Solution transitoire sur offres gratuites, en attendant un homelab ou un VPS.
+Offres gratuites, usage personnel. Cible de l'étape 11 de la roadmap ; guide pas à pas :
+`docs/DEPLOIEMENT.md`.
 
 | Service | Plateforme | Points d'attention |
 |---|---|---|
-| Frontend | Vercel | Variable `NUXT_PUBLIC_API_BASE` à pointer vers Render |
-| Backend | Render | Cold start, ping UptimeRobot toutes les 5 minutes |
-| Base de données | Neon | Choisi contre Render Postgres à cause de la suppression auto à 30 jours |
-| Monitoring | UptimeRobot | Anti cold start et surveillance de santé |
+| Backend | Site Node.js alwaysdata (Free) | 256 Mo de RAM, mise en veille après 30 min sans requête, une seule instance |
+| Base de données | PostgreSQL alwaysdata (même compte) | Sauvegardes de la plateforme limitées à quelques jours |
+| Frontend | Vercel (Hobby), région `cdg1` | Intégration Git native, branche de production `main` |
 
 Contraintes à ne jamais oublier :
-- **Système de fichiers éphémère sur Render.** Aucun upload d'image en local ne survit à un
-  redéploiement. La fonctionnalité d'upload de couverture reste bloquée tant qu'un stockage
-  objet dédié n'est pas choisi. En attendant, `cover_url` accepte uniquement des URL externes.
-- **CORS.** Le backend doit autoriser explicitement le domaine Vercel.
-- **Migrations.** Exécutées automatiquement au démarrage sur Render.
+- **Déploiement backend** par le workflow `deploy-backend.yml` (SSH + rsync, releases et
+  lien `current`, migrations et `grants.sql` exécutés en `_owner`, puis redémarrage).
+- **Droits de `_app`.** Ne jamais revalider les droits de l'utilisateur `_app` dans
+  l'interface alwaysdata (cela réinitialise les GRANT) ; si c'est fait, relancer le workflow.
+- **Pas de stockage d'images.** `cover_url` accepte uniquement des URL externes.
 - **Variables d'environnement.** Gérées séparément sur chaque plateforme, jamais versionnées.
 
 ---
@@ -235,10 +242,24 @@ Claude Code écrit le code. Mvth1s valide, comprend et décide.
 
 ---
 
+## 12 bis. Sécurité
+
+Socle "PME", détaillé dans `docs/SECURITE.md` :
+- Aucun secret en dur. Local : `.env` racine non versionné. CI : valeurs aléatoires générées
+  à chaque run. Production : variables alwaysdata / Vercel et environnement GitHub
+  `production`. En production, le démarrage échoue si un secret obligatoire manque.
+- Trois comptes PostgreSQL : `_owner` (migrations, GRANT, bootstrap), `_app` (DML seul,
+  utilisé par le backend), `_ro` (lecture seule). Le même modèle tourne en local et en CI.
+- Seul le pseudo `Mvth1s` apparaît dans le dépôt.
+- CI bloquante : gitleaks, `npm audit --omit=dev --audit-level=high`, actions épinglées par
+  SHA, `permissions:` minimales. Dependabot hebdomadaire.
+
+---
+
 ## 13. Interdits
 
 - Committer un fichier `.env` ou une chaîne de connexion en clair.
-- Lancer `migration:fresh`, `migration:reset` ou `db:wipe` sur la base Neon.
+- Lancer `migration:fresh`, `migration:reset` ou `db:wipe` sur la base de production alwaysdata.
 - Pousser directement sur `main`.
 - Ajouter une dépendance sans l'annoncer et la justifier.
 - Refactoriser du code hors du périmètre de la demande.
@@ -249,13 +270,22 @@ Claude Code écrit le code. Mvth1s valide, comprend et décide.
 
 ## 14. Sous-agents disponibles
 
-| Agent | Quand l'utiliser |
-|---|---|
-| `backend-adonisjs` | Migrations, modèles Lucid, controllers, validators, endpoints |
-| `frontend-nuxt` | Pages Nuxt, composants Vue, design system, appels API côté client |
-| `deploiement` | Docker, Render, Neon, Vercel, UptimeRobot, variables d'environnement, CORS |
-| `code-reviewer` | Relecture avant commit. Lecture seule, ne modifie jamais le code |
-| `docs-keeper` | Mise à jour de la documentation après une étape terminée |
+Chaque agent a un rôle unique, un périmètre en écriture et des interdits communs
+(voir `.claude/agents/`). Aucun agent ne fait d'opération Git ni ne touche aux dépendances.
+
+| Agent | Rôle | Écrit dans |
+|---|---|---|
+| `backend-adonisjs` | Code applicatif backend | `backend/app`, `start`, `config`, `database`, config du framework |
+| `frontend-nuxt` | Code applicatif frontend | `frontend/app`, `server`, `public`, `nuxt.config.ts` |
+| `deploiement` | Exécution locale et livraison | compose, `docker/`, Dockerfiles, `.github/`, `.env.example` |
+| `testeur-backend` | Tests fonctionnels Japa | `backend/tests` |
+| `testeur-frontend` | Tests Vitest | `frontend/tests` |
+| `docs-keeper` | Documentation | `*.md` racine (sauf CLAUDE.md), `docs/` (sauf sécurité, audits, release) |
+| `gardien-securite-doc` | Documentation de sécurité | `docs/SECURITE.md` |
+| `code-reviewer` | Relecture avant PR | rien (lecture seule) |
+| `auditeur-securite` | Audit du socle de sécurité | `docs/audits/securite-*.md` |
+| `auditeur-fonctionnel` | Comparaison appli / user stories | `docs/release-*.md` (section écarts) |
+| `verificateur-hypotheses` | Vérification sur sources officielles | `docs/release-*.md` (section hypothèses) |
 
 ---
 
@@ -264,6 +294,7 @@ Claude Code écrit le code. Mvth1s valide, comprend et décide.
 - `CAHIER_DES_CHARGES.md` : périmètre, user stories, schéma détaillé, charte graphique complète
 - `roadmap.md` : étapes de développement, conventions Git détaillées, critères de fin d'étape
 - `README.md` : installation et lancement
+- `docs/DEPLOIEMENT.md`, `docs/SECURITE.md` : mise en production et socle de sécurité
 
 En cas de contradiction entre ce fichier et le cahier des charges, le cahier des charges
 fait foi. Signaler la contradiction plutôt que de trancher seul.

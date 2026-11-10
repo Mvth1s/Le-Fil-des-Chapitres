@@ -21,7 +21,7 @@
 | 8 | Interface : liste de lecture (filtres, statuts) | `feature/reading-list-ui` |
 | 9 | Interface : mise à jour rapide de la progression | `feature/progress-quick-update` |
 | 10 | Interface : statistiques basiques | `feature/stats-ui` |
-| 11 | Déploiement (Render, Neon, Vercel, UptimeRobot) | `deploy/production-setup` |
+| 11 | Déploiement (alwaysdata, Vercel) | `deploy/production-setup` |
 
 Les Phases 2 (0.2.0) et 3 (1.0.0) restent au niveau de la liste du `CAHIER_DES_CHARGES.md`
 section 12 : elles seront détaillées étape par étape une fois la Phase 1 terminée.
@@ -52,7 +52,7 @@ section 12 : elles seront détaillées étape par étape une fois la Phase 1 ter
 3. Vérifier le critère "Terminé quand" de l'étape (test manuel systématique avant toute
    fusion, en particulier pour les endpoints backend).
 4. Relecture par le sous-agent `code-reviewer` avant fusion.
-5. Fusionner dans `dev`. Ne jamais fusionner dans `main` sans validation explicite de Mathis.
+5. Fusionner dans `dev`. Ne jamais fusionner dans `main` sans validation explicite de Mvth1s.
 6. Mettre à jour la documentation (`docs-keeper`) si l'étape a changé un endpoint, un
    schéma ou l'architecture.
 
@@ -75,8 +75,8 @@ Objectif : avoir un projet full-stack qui démarre en local via Docker.
 
 Contenu :
 - Structure de dossiers `frontend/` et `backend/`
-- Initialisation AdonisJS 6 dans `backend/` (starter `api`, Lucid, PostgreSQL)
-- Initialisation Nuxt 3 + TypeScript dans `frontend/`
+- Initialisation AdonisJS 7 (Node.js 24) dans `backend/` (starter `api`, Lucid, PostgreSQL)
+- Initialisation Nuxt 4 + TypeScript dans `frontend/`
 - Dockerfile de dev pour chaque service, avec hot reload
 - `docker-compose.yml` à la racine : nuxt (3000), adonis (3333), postgres 16 (5432)
 - `frontend/.env.example` et `backend/.env.example`
@@ -252,23 +252,46 @@ Terminé quand :
 
 ---
 
-### Étape 11 - Déploiement (Render, Neon, Vercel, UptimeRobot)
+### Étape 11 - Déploiement (alwaysdata, Vercel)
 
 **Branche :** `deploy/production-setup`
 **Dépend de :** Étapes 1 à 10 terminées
 
-Objectif : rendre l'application accessible en ligne, conformément à `CLAUDE.md` section 11.
+Objectif : rendre l'application accessible en ligne, protégée, conformément à
+`CLAUDE.md` section 11 et à `CAHIER_DES_CHARGES.md` sections 7 et 11. Le détail
+opérationnel vit dans `docs/DEPLOIEMENT.md`, la politique de sécurité dans `docs/SECURITE.md`.
 
 Contenu :
-- Backend sur Render, base sur Neon, frontend sur Vercel
-- CORS configuré pour le domaine Vercel
-- Migrations automatiques au démarrage sur Render
-- Variables d'environnement configurées séparément sur chaque plateforme
-- UptimeRobot configuré contre le cold start
+- Backend AdonisJS sur un site Node.js alwaysdata (offre Free), PostgreSQL alwaysdata
+  sur le même compte, frontend Nuxt sur Vercel Hobby (région `cdg1`)
+- Trois comptes PostgreSQL : `_owner` (migrations, GRANT, bootstrap), `_app` (DML seul,
+  utilisé par le backend), `_ro` (lecture seule) ; droits posés par `grants.sql` ;
+  mot de passe `_owner` uniquement dans l'environnement GitHub `production`
+- Seeder de bootstrap idempotent : crée l'utilisateur unique (`APP_OWNER_USERNAME`,
+  `APP_OWNER_PASSWORD`) et garantit les 14 genres, exécuté à chaque déploiement
+- Route serveur Nitro (proxy) : le navigateur ne parle qu'au frontend, toutes les
+  requêtes `/api/**` sont relayées au backend avec un en-tête `X-Api-Key`
+- HTTP Basic Auth sur tout le frontend (identifiants en variables d'environnement,
+  obligatoires en production) ; `X-Api-Key` exigé par le backend en production
+- `GET /health` public, sans information sensible
+- En-têtes de sécurité, CORS en liste blanche, `npm audit` et gitleaks bloquants en CI,
+  dependabot
+- Workflow GitHub `deploy-backend.yml` : déploiement par SSH/rsync, releases datées et
+  lien symbolique `current`, migrations puis bootstrap à chaque déploiement
+- Frontend déployé par l'intégration Git native de Vercel
+- Variables d'environnement configurées séparément sur chaque plateforme, jamais versionnées
+- Rédaction de `docs/DEPLOIEMENT.md`
 
 Terminé quand :
-- L'application est accessible en ligne, frontend et backend communiquent correctement,
-  UptimeRobot ping actif.
+- L'application est accessible en ligne : le frontend demande le Basic Auth, le backend
+  refuse toute requête `/api/**` sans `X-Api-Key` valide, `GET /health` répond.
+- Frontend et backend communiquent via le proxy Nitro, l'utilisateur unique existe et
+  les 14 genres sont présents.
+- Le backend tourne avec `_app` ; un déploiement complet par `deploy-backend.yml` réussit,
+  CI de sécurité verte.
+
+Ce qu'on apprend : déploiement Node.js sur un hébergeur mutualisé, moindre privilège
+PostgreSQL, proxy serveur et secrets d'infrastructure, CI/CD avec GitHub Actions.
 
 ---
 
