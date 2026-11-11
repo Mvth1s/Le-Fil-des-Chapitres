@@ -297,7 +297,7 @@ function setView(next: 'grid' | 'list') {
 }
 
 .card-link:focus-visible :deep(.app-card) {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -375,7 +375,7 @@ function setView(next: 'grid' | 'list') {
 }
 
 .table a:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 </style>

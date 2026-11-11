@@ -160,7 +160,7 @@ async function handleSubmit() {
   font-family: var(--font-body);
   font-size: 16px;
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-field-border);
   border-radius: var(--radius-md);
   background-color: var(--color-surface);
   color: var(--color-text);
@@ -168,7 +168,7 @@ async function handleSubmit() {
 }
 
 .reading-entry-form__textarea:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 1px;
 }
 

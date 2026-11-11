@@ -1,7 +1,7 @@
 <script setup lang="ts">
 type Variant = 'reading' | 'completed' | 'on_hold' | 'dropped' | 'plan_to_read' | 'neutral'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     variant?: Variant
   }>(),
@@ -9,11 +9,13 @@ withDefaults(
     variant: 'neutral',
   }
 )
+
+const dotColor = computed(() => (props.variant === 'neutral' ? 'currentColor' : STATUS_COLORS[props.variant]))
 </script>
 
 <template>
   <span class="app-badge" :class="`is-${variant}`">
-    <span class="app-badge__dot" aria-hidden="true" />
+    <span class="app-badge__dot" :style="{ backgroundColor: dotColor }" aria-hidden="true" />
     <slot />
   </span>
 </template>
@@ -25,7 +27,7 @@ withDefaults(
  * pastel de la palette n'atteignent pas 4.5:1 en texte plein (mesure ~2.3
  * a 3.8:1 selon la couleur, voir resume de l'etape 5) et ce texte est trop
  * petit pour beneficier du seuil "grand texte" (3:1). La couleur du statut
- * reste donc decorative (pastille + bordure), le texte lui-meme garde
+ * reste donc decorative (pastille, comme le UI kit), le texte lui-meme garde
  * --color-text sur un fond quasi blanc : contraste plein, conforme AA.
  */
 .app-badge {
@@ -46,41 +48,5 @@ withDefaults(
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: currentColor;
-}
-
-.is-reading {
-  border-color: var(--color-blue);
-}
-.is-reading .app-badge__dot {
-  background-color: var(--color-blue);
-}
-
-.is-completed {
-  border-color: var(--color-primary);
-}
-.is-completed .app-badge__dot {
-  background-color: var(--color-primary);
-}
-
-.is-on_hold {
-  border-color: var(--color-beige);
-}
-.is-on_hold .app-badge__dot {
-  background-color: var(--color-beige);
-}
-
-.is-dropped {
-  border-color: var(--color-rose);
-}
-.is-dropped .app-badge__dot {
-  background-color: var(--color-rose);
-}
-
-.is-plan_to_read {
-  border-color: var(--color-border);
-}
-.is-plan_to_read .app-badge__dot {
-  background-color: var(--color-text-muted);
 }
 </style>

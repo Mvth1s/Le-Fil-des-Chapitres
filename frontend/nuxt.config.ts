@@ -49,8 +49,8 @@ export default defineNuxtConfig({
           'Content-Security-Policy': [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline'",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com",
+            "style-src 'self' 'unsafe-inline'",
+            "font-src 'self'",
             "img-src 'self' https: data:",
             "connect-src 'self'",
             "frame-ancestors 'none'",
@@ -68,12 +68,22 @@ export default defineNuxtConfig({
       // Instance privee : ne pas indexer (voir aussi public/robots.txt).
       meta: [{ name: 'robots', content: 'noindex, nofollow' }],
       link: [
-        // preconnect : accelere le chargement des polices Google Fonts
-        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        // Polices auto-hebergees (main.css) : precharge des deux fontes droites,
+        // utilisees des le premier rendu. crossorigin est requis pour les fontes,
+        // meme en meme origine, sinon le preload n'est pas reutilise.
         {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap',
+          rel: 'preload',
+          href: '/fonts/dancing-script/DancingScript-Variable.woff2',
+          as: 'font',
+          type: 'font/woff2',
+          crossorigin: '',
+        },
+        {
+          rel: 'preload',
+          href: '/fonts/playfair-display/PlayfairDisplay-Variable.woff2',
+          as: 'font',
+          type: 'font/woff2',
+          crossorigin: '',
         },
         // favicon.ico reste servi par convention Nuxt (public/favicon.ico) ;
         // ce lien PNG est prefere par les navigateurs qui le supportent.
