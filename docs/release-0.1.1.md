@@ -54,3 +54,5 @@ repart d'ici.
 
 - Catalogue : course entre `router.replace` et le watch de `route.query.q` (lot 3.2),
   corrigée au lot 3.4 (`lastQ`).
+- Backend : `StatsController` trie le top noté par `rating` sans critère secondaire (ordre
+  instable à note égale). Hors périmètre UI (lot 3.6).
