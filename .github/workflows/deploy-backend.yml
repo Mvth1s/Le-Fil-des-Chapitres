@@ -232,8 +232,13 @@ jobs:
           {
             # Variables lues par "node ace" (start/env.ts). DB_USER = _owner :
             # la connexion par defaut sert ici aux migrations.
+            # NODE_OPTIONS : la limite de 256 Mo de RAM alwaysdata vaut pour
+            # tout le COMPTE et le site tourne en parallele ; on borne donc le
+            # tas des "node ace" distants (script distant seulement, le build
+            # sur le runner n'est pas concerne).
             printf 'export %s=%q\n' \
               NODEJS_VERSION 24 \
+              NODE_OPTIONS --max-old-space-size=96 \
               NODE_ENV production \
               TZ UTC \
               PORT 3333 \

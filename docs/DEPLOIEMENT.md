@@ -172,9 +172,11 @@ openssl rand -hex 32   # API_KEY (64 caractères)
 | `DB_DATABASE` | `<compte>_lfdc` | |
 | `DB_USER` | `<compte>_app` | Jamais `_owner` |
 | `DB_PASSWORD` | mot de passe de `_app` | |
-| `NODE_OPTIONS` | `--max-old-space-size=<a-confirmer>` | Plafond mémoire de Node. Valeur issue de la mesure H1 : voir `docs/release-0.1.0.md`, hypothèse H1 |
+| `NODE_OPTIONS` | `--max-old-space-size=128` | Plafond mémoire de Node. Pic mesuré 157 Mo sur 256 Mo : voir `docs/release-0.1.0.md`, hypothèse H1 |
 
 `HOST` et `PORT` sont fournis par alwaysdata : ne pas les définir.
+
+> **Mémoire.** La limite de 256 Mo est par compte, pas par site. Pendant un déploiement, les migrations tournent à côté du site (le workflow les limite). Si le site est tué pendant un déploiement, relancer le workflow (`gh workflow run deploy-backend.yml --ref main`) ou arrêter le site avant de déployer.
 
 **Ne jamais mettre sur le site** : `DB_MIGRATION_USER`, `DB_MIGRATION_PASSWORD`,
 `APP_OWNER_USERNAME`, `APP_OWNER_PASSWORD`, ni le mot de passe de `_owner`. Le site
