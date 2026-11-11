@@ -18,12 +18,11 @@ const [
   { data: entries, error: listError },
 ] = await Promise.all([
   useFetch<Webtoon[]>(`${apiBase}/webtoons`, {
-    // Cle explicite : par defaut useFetch derive sa cle de l'URL, or l'URL
-    // differe entre le SSR (apiBaseServer, reseau Docker interne) et le
-    // navigateur (apiBase public) - voir useApiBase(). Sans cle stable, le
-    // client ne retrouve jamais les donnees transferees par le SSR sous la
-    // meme cle, refait l'appel de zero, et desynchronise pending/data entre
-    // le rendu serveur et l'hydratation (erreur "Hydration node mismatch").
+    // Cle explicite : par defaut useFetch derive sa cle de l'URL. L'URL est
+    // aujourd'hui identique en SSR et dans le navigateur ("/api", voir
+    // useApiBase()), mais une cle stable garantit que le client retrouve
+    // toujours les donnees transferees par le SSR (sinon "Hydration node
+    // mismatch").
     key: 'webtoons-list',
   }),
   useFetch<UserWebtoon[]>(`${apiBase}/user/list`, { key: 'user-list' }),

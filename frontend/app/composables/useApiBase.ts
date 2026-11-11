@@ -1,10 +1,9 @@
 /**
- * Choisit la bonne base d'API selon le contexte d'execution : le rendu SSR
- * tourne dans le conteneur frontend (reseau Docker interne), l'hydratation
- * cote navigateur tourne sur la machine de l'utilisateur (localhost). Voir
- * nuxt.config.ts. A prefixer devant le chemin de chaque appel useFetch.
+ * Base des appels d'API : toujours "/api", en SSR comme dans le navigateur.
+ * Les deux passent par le proxy Nitro (server/api/[...path].ts), seul a
+ * connaitre l'URL du backend et la cle X-Api-Key. En SSR, useFetch sur un
+ * chemin relatif est traite en interne par Nitro, sans requete reseau.
  */
 export function useApiBase() {
-  const config = useRuntimeConfig()
-  return import.meta.server ? config.apiBaseServer : config.public.apiBase
+  return '/api'
 }

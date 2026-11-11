@@ -1,0 +1,376 @@
+# Deploiement du backend AdonisJS sur alwaysdata (site Node.js, offre Free).
+# Guide pas a pas : docs/DEPLOIEMENT.md.
+#
+# Principe : le build est fait ici (runner GitHub), envoye par rsync dans
+# un nouveau dossier "releases/<release>" sur alwaysdata, puis, en SSH sur
+# le serveur (la base PostgreSQL n'est pas documentee comme joignable de
+# l'exterieur) : migrations, GRANT et bootstrap en compte _owner. Ensuite
+# bascule atomique du lien "current", redemarrage du site par l'API et
+# verification de /health.
+#
+# Arborescence sur alwaysdata (ALWAYSDATA_APP_DIR, ex. /home/<compte>/lfdc) :
+#   releases/<sha court>-<numero de run>/   build complet + node_modules
+#   current -> releases/<...>               cible de la commande du site :
+#                                           node <APP_DIR>/current/bin/server.js
+#
+# Noms figes (environnement GitHub "production", Settings > Environments) :
+#   Secrets :
+#     ALWAYSDATA_SSH_HOST         ssh-<compte>.alwaysdata.net
+#     ALWAYSDATA_SSH_USER         utilisateur SSH (Remote access > SSH)
+#     ALWAYSDATA_SSH_KEY          cle privee dediee au deploiement
+#     ALWAYSDATA_SSH_KNOWN_HOSTS  ligne(s) known_hosts de l'hote, empreinte
+#                                 verifiee dans l'interface alwaysdata
+#     ALWAYSDATA_API_TOKEN        jeton API (profil limite a "Sites")
+#     ALWAYSDATA_ACCOUNT          nom du compte alwaysdata
+#     ALWAYSDATA_SITE_ID          identifiant numerique du site Node.js
+#     DB_HOST                     postgresql-<compte>.alwaysdata.net
+#     DB_NAME                     nom de la base
+#     DB_OWNER_USER               compte _owner (migrations, GRANT)
+#     DB_OWNER_PASSWORD           mot de passe de _owner
+#     DB_APP_USER                 compte _app (nom seul, pour grants.sql)
+#     DB_RO_USER                  compte _ro (nom seul, pour grants.sql)
+#     APP_OWNER_USERNAME          utilisateur unique cree au 1er deploiement
+#     APP_OWNER_PASSWORD          son mot de passe (ignore ensuite)
+#     BACKEND_HEALTH_URL          https://<compte>.alwaysdata.net/health
+#   Variable (ou secret, la variable est prioritaire) :
+#     ALWAYSDATA_APP_DIR          repertoire de base, chemin absolu
+#
+# Si l'un d'eux manque, le job se termine en succes sans rien deployer
+# (message dans le resume du run) : le depot reste vert tant que la
+# production n'est pas configuree.
+#
+# Securite :
+# - les secrets ne sont exposes qu'aux steps qui en ont besoin, jamais a
+#   "npm ci" (un script d'installation de dependance pourrait les lire) ;
+# - aucun secret sur une ligne de commande, ni ici ni sur le serveur (voir
+#   le step "Migrate, grant, bootstrap and switch") ;
+# - l'hote SSH est verifie (known_hosts fourni, StrictHostKeyChecking=yes) ;
+# - le site en production n'utilise jamais _owner : il tourne en _app avec
+#   ses propres variables, definies dans l'interface alwaysdata.
+
+name: Deploy backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**']
+  workflow_dispatch:
+
+# Moindre privilege : lecture du depot seulement.
+permissions:
+  contents: read
+
+# Un seul deploiement a la fois ; un deploiement en cours n'est jamais
+# annule (une migration interrompue laisserait la base dans un etat flou).
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    # "shell: bash" explicite = "bash --noprofile --norc -eo pipefail" : sans
+    # lui, GitHub lance "bash -e" SANS pipefail et un echec distant suivi de
+    # "| tee" passerait inapercu (run vert, current non bascule). Vaut pour
+    # tous les steps "run:" du job (plusieurs contiennent un pipe).
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check deployment secrets
+        id: check
+        env:
+          ALWAYSDATA_SSH_HOST: ${{ secrets.ALWAYSDATA_SSH_HOST }}
+          ALWAYSDATA_SSH_USER: ${{ secrets.ALWAYSDATA_SSH_USER }}
+          ALWAYSDATA_SSH_KEY: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          ALWAYSDATA_SSH_KNOWN_HOSTS: ${{ secrets.ALWAYSDATA_SSH_KNOWN_HOSTS }}
+          ALWAYSDATA_API_TOKEN: ${{ secrets.ALWAYSDATA_API_TOKEN }}
+          ALWAYSDATA_ACCOUNT: ${{ secrets.ALWAYSDATA_ACCOUNT }}
+          ALWAYSDATA_SITE_ID: ${{ secrets.ALWAYSDATA_SITE_ID }}
+          ALWAYSDATA_APP_DIR: ${{ vars.ALWAYSDATA_APP_DIR || secrets.ALWAYSDATA_APP_DIR }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_OWNER_USER: ${{ secrets.DB_OWNER_USER }}
+          DB_OWNER_PASSWORD: ${{ secrets.DB_OWNER_PASSWORD }}
+          DB_APP_USER: ${{ secrets.DB_APP_USER }}
+          DB_RO_USER: ${{ secrets.DB_RO_USER }}
+          APP_OWNER_USERNAME: ${{ secrets.APP_OWNER_USERNAME }}
+          APP_OWNER_PASSWORD: ${{ secrets.APP_OWNER_PASSWORD }}
+          BACKEND_HEALTH_URL: ${{ secrets.BACKEND_HEALTH_URL }}
+        run: |
+          missing=""
+          for name in ALWAYSDATA_SSH_HOST ALWAYSDATA_SSH_USER ALWAYSDATA_SSH_KEY \
+            ALWAYSDATA_SSH_KNOWN_HOSTS ALWAYSDATA_API_TOKEN ALWAYSDATA_ACCOUNT \
+            ALWAYSDATA_SITE_ID ALWAYSDATA_APP_DIR DB_HOST DB_NAME DB_OWNER_USER \
+            DB_OWNER_PASSWORD DB_APP_USER DB_RO_USER APP_OWNER_USERNAME \
+            APP_OWNER_PASSWORD BACKEND_HEALTH_URL; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            # Noms seulement, jamais de valeur.
+            {
+              echo "### Deploiement backend"
+              echo "secrets de deploiement non configures, deploiement ignore"
+              echo ""
+              echo "Manquants :$missing"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Ces valeurs sont recopiees dans des commandes distantes et des
+          # URL : on refuse tout caractere qui pourrait les detourner.
+          # Composants "." et ".." refuses : pas de sortie du repertoire prevu.
+          if ! [[ "$ALWAYSDATA_APP_DIR" =~ ^/[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)+$ ]] \
+            || [[ "/$ALWAYSDATA_APP_DIR/" =~ /\.\.?/ ]]; then
+            echo "::error::ALWAYSDATA_APP_DIR doit etre un chemin absolu simple (ex. /home/<compte>/lfdc)"
+            exit 1
+          fi
+          [[ "$ALWAYSDATA_SITE_ID" =~ ^[0-9]+$ ]] \
+            || { echo "::error::ALWAYSDATA_SITE_ID doit etre numerique"; exit 1; }
+          [[ "$ALWAYSDATA_ACCOUNT" =~ ^[A-Za-z0-9_-]+$ ]] \
+            || { echo "::error::ALWAYSDATA_ACCOUNT invalide"; exit 1; }
+          [[ "$ALWAYSDATA_API_TOKEN" =~ ^[A-Za-z0-9_-]+$ ]] \
+            || { echo "::error::ALWAYSDATA_API_TOKEN contient des caracteres inattendus"; exit 1; }
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        if: steps.check.outputs.ready == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        if: steps.check.outputs.ready == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Build backend
+        # Aucun secret ici. Les dependances de production sont installees sur
+        # le runner (aucun module natif : pg, scrypt de Node) pour ne pas
+        # dependre de npm ni de la RAM (256 Mo) du serveur.
+        # grants.sql n'est pas copie par "node ace build" : on l'ajoute.
+        if: steps.check.outputs.ready == 'true'
+        working-directory: backend
+        run: |
+          npm ci
+          node ace build
+          mkdir -p build/database/sql
+          cp database/sql/grants.sql build/database/sql/
+          cd build
+          npm ci --omit=dev
+
+      - name: Configure SSH
+        # Cle et known_hosts dans des fichiers 600 sous RUNNER_TEMP, supprimes
+        # par le dernier step. Un fichier de config evite de repeter les
+        # options et garantit StrictHostKeyChecking=yes partout (ssh, rsync).
+        # BatchMode : echec immediat plutot qu'une invite (et pas d'essais
+        # repetes qui feraient bloquer l'IP du runner par alwaysdata).
+        if: steps.check.outputs.ready == 'true'
+        env:
+          SSH_HOST: ${{ secrets.ALWAYSDATA_SSH_HOST }}
+          SSH_USER: ${{ secrets.ALWAYSDATA_SSH_USER }}
+          SSH_KEY: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.ALWAYSDATA_SSH_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          dir="$RUNNER_TEMP/deploy-ssh"
+          mkdir -p "$dir"
+          printf '%s\n' "$SSH_KEY" > "$dir/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$dir/known_hosts"
+          cat > "$dir/config" <<EOF
+          Host alwaysdata
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile $dir/key
+            IdentitiesOnly yes
+            UserKnownHostsFile $dir/known_hosts
+            StrictHostKeyChecking yes
+            BatchMode yes
+            ConnectTimeout 20
+          EOF
+          echo "SSH_CONFIG=$dir/config" >> "$GITHUB_ENV"
+
+      - name: Upload release
+        # Dossier de release unique par run : redeployer le meme commit ne
+        # reecrit jamais la release en service.
+        if: steps.check.outputs.ready == 'true'
+        env:
+          APP_DIR: ${{ vars.ALWAYSDATA_APP_DIR || secrets.ALWAYSDATA_APP_DIR }}
+        run: |
+          release="${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}"
+          echo "RELEASE=$release" >> "$GITHUB_ENV"
+          printf 'mkdir -p -- %q\n' "$APP_DIR/releases" | ssh -F "$SSH_CONFIG" alwaysdata 'bash -s'
+          rsync -a --delete -e "ssh -F $SSH_CONFIG" \
+            backend/build/ "alwaysdata:$APP_DIR/releases/$release/"
+
+      - name: Migrate, grant, bootstrap and switch
+        # Transmission des secrets : le script est envoye sur l'ENTREE
+        # STANDARD de "bash -s", precede de lignes "export VAR=..." generees
+        # par printf (builtin, donc absent de "ps" sur le runner). Sur le
+        # serveur, les valeurs ne sont ni ecrites sur disque ni passees en
+        # argument : elles vivent dans l'environnement du process (lisible
+        # seulement par le meme utilisateur). SendEnv n'est pas utilisable :
+        # il exige un AcceptEnv cote serveur, que l'on ne controle pas.
+        #
+        # Le corps est dans une fonction appelee avec </dev/null : bash lit
+        # tout le script avant de l'executer, et aucune commande (psql, node)
+        # ne peut consommer la suite du script sur l'entree standard.
+        #
+        # APP_KEY et API_KEY sont aleatoires et jetables : "node ace" les
+        # exige en production mais ne s'en sert pas ici. Le site garde les
+        # siens (variables du site alwaysdata).
+        if: steps.check.outputs.ready == 'true'
+        id: remote
+        env:
+          APP_DIR: ${{ vars.ALWAYSDATA_APP_DIR || secrets.ALWAYSDATA_APP_DIR }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_OWNER_USER: ${{ secrets.DB_OWNER_USER }}
+          DB_OWNER_PASSWORD: ${{ secrets.DB_OWNER_PASSWORD }}
+          DB_APP_USER: ${{ secrets.DB_APP_USER }}
+          DB_RO_USER: ${{ secrets.DB_RO_USER }}
+          APP_OWNER_USERNAME: ${{ secrets.APP_OWNER_USERNAME }}
+          APP_OWNER_PASSWORD: ${{ secrets.APP_OWNER_PASSWORD }}
+        run: |
+          throwaway_app_key=$(openssl rand -hex 16)
+          throwaway_api_key=$(openssl rand -hex 32)
+          echo "::add-mask::$throwaway_app_key"
+          echo "::add-mask::$throwaway_api_key"
+          {
+            # Variables lues par "node ace" (start/env.ts). DB_USER = _owner :
+            # la connexion par defaut sert ici aux migrations.
+            # NODE_OPTIONS : la limite de 256 Mo de RAM alwaysdata vaut pour
+            # tout le COMPTE et le site tourne en parallele ; on borne donc le
+            # tas des "node ace" distants (script distant seulement, le build
+            # sur le runner n'est pas concerne).
+            printf 'export %s=%q\n' \
+              NODEJS_VERSION 24 \
+              NODE_OPTIONS --max-old-space-size=96 \
+              NODE_ENV production \
+              TZ UTC \
+              PORT 3333 \
+              HOST 127.0.0.1 \
+              LOG_LEVEL info \
+              APP_KEY "$throwaway_app_key" \
+              API_KEY "$throwaway_api_key" \
+              DB_HOST "$DB_HOST" \
+              DB_PORT 5432 \
+              DB_DATABASE "$DB_NAME" \
+              DB_USER "$DB_OWNER_USER" \
+              DB_PASSWORD "$DB_OWNER_PASSWORD"
+            # Non exportees : passees uniquement a la commande qui les utilise.
+            printf '%s=%q\n' \
+              app_dir "$APP_DIR" \
+              release "$RELEASE" \
+              db_app_user "$DB_APP_USER" \
+              db_ro_user "$DB_RO_USER" \
+              owner_username "$APP_OWNER_USERNAME" \
+              owner_password "$APP_OWNER_PASSWORD"
+            cat <<'REMOTE'
+          main() {
+            set -euo pipefail
+            release_dir="$app_dir/releases/$release"
+            cd "$release_dir"
+
+            # Version de Node du serveur : NODEJS_VERSION (doc alwaysdata)
+            # la force, on verifie quand meme avant de toucher a la base.
+            node_version=$(node --version)
+            echo "node $node_version"
+            case "$node_version" in
+              v24.*) ;;
+              *) echo "Node.js 24 requis sur le serveur, trouve $node_version" >&2; exit 1 ;;
+            esac
+
+            # 1. Schema, en _owner (seul compte autorise au DDL).
+            node ace migration:run --force
+
+            # 2. Droits de _app et _ro, rejoues apres chaque migration.
+            PGPASSWORD="$DB_PASSWORD" psql -v ON_ERROR_STOP=1 \
+              -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_DATABASE" \
+              -v app_role="$db_app_user" -v ro_role="$db_ro_user" \
+              -f database/sql/grants.sql
+
+            # 3. Utilisateur unique (si absent) et genres, idempotent.
+            APP_OWNER_USERNAME="$owner_username" APP_OWNER_PASSWORD="$owner_password" \
+              node ace db:seed --files database/seeders/bootstrap_seeder.ts
+
+            # 4. Bascule atomique : mv -T remplace le lien en un seul rename(),
+            # "current" pointe toujours sur une release complete.
+            previous=$(readlink "$app_dir/current" || true)
+            echo "PREVIOUS_RELEASE=${previous##*/}"
+            ln -sfn "$release_dir" "$app_dir/current.tmp"
+            mv -T "$app_dir/current.tmp" "$app_dir/current"
+            touch "$release_dir"
+
+            # 5. Quota disque de 1 Go (base comprise) : on ne garde que la
+            # release en service et la cible precedente de current (rollback).
+            # Pas de tri par date : une release recente mais echouee (jamais
+            # basculee) serait gardee a la place de la release de repli.
+            for old_dir in "${app_dir:?}"/releases/*/; do
+              old=$(basename "$old_dir")
+              [ "$old" = "$release" ] && continue
+              [ -n "$previous" ] && [ "$old" = "${previous##*/}" ] && continue
+              rm -rf -- "${app_dir:?}/releases/$old"
+            done
+          }
+          main </dev/null
+          REMOTE
+          } | ssh -F "$SSH_CONFIG" alwaysdata 'bash -s' | tee "$RUNNER_TEMP/remote.log"
+          previous=$(grep '^PREVIOUS_RELEASE=' "$RUNNER_TEMP/remote.log" | tail -n 1 | cut -d= -f2)
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+
+      - name: Restart site
+        # API alwaysdata : basic auth, utilisateur "<jeton> account=<compte>",
+        # mot de passe vide (help.alwaysdata.com, Development > API). Les
+        # identifiants passent par un fichier de config curl lu sur stdin
+        # (-K -), jamais sur la ligne de commande.
+        if: steps.check.outputs.ready == 'true'
+        env:
+          API_TOKEN: ${{ secrets.ALWAYSDATA_API_TOKEN }}
+          ACCOUNT: ${{ secrets.ALWAYSDATA_ACCOUNT }}
+          SITE_ID: ${{ secrets.ALWAYSDATA_SITE_ID }}
+        run: |
+          printf 'user = "%s account=%s:"\n' "$API_TOKEN" "$ACCOUNT" \
+            | curl -fsS -X POST --basic -K - \
+              "https://api.alwaysdata.com/v1/site/${SITE_ID}/restart/"
+
+      - name: Health check
+        # Une seule instance sur alwaysdata : le site est coupe pendant le
+        # redemarrage, d'ou les essais repetes (10 x 6 s).
+        if: steps.check.outputs.ready == 'true'
+        env:
+          HEALTH_URL: ${{ secrets.BACKEND_HEALTH_URL }}
+          APP_DIR: ${{ vars.ALWAYSDATA_APP_DIR || secrets.ALWAYSDATA_APP_DIR }}
+          PREVIOUS: ${{ steps.remote.outputs.previous }}
+        run: |
+          for attempt in $(seq 1 10); do
+            if curl -fsS --max-time 10 "$HEALTH_URL"; then
+              echo
+              echo "Backend en ligne (essai $attempt), release $RELEASE"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::/health ne repond pas apres le deploiement de $RELEASE"
+          if [ -n "$PREVIOUS" ]; then
+            {
+              echo "### Rollback"
+              echo "Les migrations deja appliquees ne sont PAS annulees."
+              echo "En SSH sur alwaysdata, re-pointer current vers la release precedente :"
+              echo '```'
+              echo "ln -sfn $APP_DIR/releases/$PREVIOUS $APP_DIR/current.tmp && mv -T $APP_DIR/current.tmp $APP_DIR/current"
+              echo '```'
+              echo "puis redemarrer le site (Web > Sites > Restart)."
+            } | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 1
+
+      - name: Remove SSH material
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/deploy-ssh" "$RUNNER_TEMP/remote.log"
