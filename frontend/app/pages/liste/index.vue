@@ -15,15 +15,29 @@ const {
   key: 'user-list',
 })
 
-const statusOptions = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }))
+// Onglets de statut (decision V7), dans l'ordre du UI kit. '' = tous.
+const tabs: Array<{ value: UserWebtoonStatus | ''; label: string; empty: string }> = [
+  { value: '', label: 'Tous', empty: '' },
+  { value: 'reading', label: 'En cours', empty: 'Aucune lecture en cours' },
+  { value: 'completed', label: 'Terminés', empty: 'Aucun titre terminé' },
+  { value: 'on_hold', label: 'En pause', empty: 'Aucun titre en pause' },
+  { value: 'plan_to_read', label: 'À lire', empty: 'Aucun titre à lire' },
+  { value: 'dropped', label: 'Abandonnés', empty: 'Aucun titre abandonné' },
+]
+const statusFilter = ref<UserWebtoonStatus | ''>('')
+const activeTab = computed(() => tabs.find((tab) => tab.value === statusFilter.value) ?? tabs[0]!)
 
-const statusFilterOptions = [{ value: '', label: 'Tous les statuts' }, ...statusOptions]
+// Compteurs sur la liste complete, avant recherche et autres filtres.
+const tabCounts = computed(() => {
+  const counts: Record<string, number> = { '': entries.value?.length ?? 0 }
+  for (const entry of entries.value ?? []) counts[entry.status] = (counts[entry.status] ?? 0) + 1
+  return counts
+})
 
 // Filtrage et tri cote client (liste personnelle, petite) : logique dans
 // utils/reading-list.ts, fonction pure testable.
 const search = ref('')
 const debouncedSearch = useDebouncedRef(search, 300)
-const statusFilter = ref<UserWebtoonStatus | ''>('')
 const genreFilter = ref('')
 // Chaine dans le select ('' = toutes les notes), convertie en nombre pour le filtre.
 const minRatingFilter = ref('')
@@ -72,55 +86,25 @@ const filteredEntries = computed(() =>
   })
 )
 
+// L'onglet n'est pas un filtre a reinitialiser : c'est la vue choisie.
 const hasActiveFilters = computed(
-  () =>
-    !!(
-      search.value ||
-      statusFilter.value ||
-      genreFilter.value ||
-      minRatingFilter.value ||
-      sort.value !== 'title'
-    )
+  () => !!(search.value || genreFilter.value || minRatingFilter.value || sort.value !== 'title')
 )
 
 function resetFilters() {
   search.value = ''
-  statusFilter.value = ''
   genreFilter.value = ''
   minRatingFilter.value = ''
   sort.value = 'title'
 }
 
-// Ids des entrees ayant une requete en vol : une seule requete a la fois par
-// entree (+1, saisie directe, statut, edition), sans bloquer les autres cartes.
-const pendingIds = reactive(new Set<string>())
-
-async function handleStatusChange(entry: UserWebtoon, newStatus: UserWebtoonStatus) {
-  if (pendingIds.has(entry.id)) return
-  pendingIds.add(entry.id)
-  try {
-    const updated = await $fetch<UserWebtoon>(`${apiBase}/user/list/${entry.id}`, {
-      method: 'PUT',
-      body: { status: newStatus },
-    })
-    // Patch local plutot que refresh() : refresh repasse pending a true, ce
-    // qui demonterait toute la liste et ferait perdre le focus.
-    patchEntry(entry.id, updated)
-  } catch {
-    toast.error('Le changement de statut a échoué. Réessaie dans un instant.')
-  } finally {
-    pendingIds.delete(entry.id)
-  }
-}
-
-function canAddChapter(entry: UserWebtoon) {
-  const total = entry.webtoon.chaptersTotal
-  return total === null || entry.chaptersRead < total
-}
+// "+1 chapitre" partage avec l'accueil et le catalogue. pendingIds sert aussi
+// a l'edition : une seule requete a la fois par entree.
+const { increment, pendingIds } = useChapterIncrement(entries)
 
 // data de useFetch est un shallowRef (Nuxt 4) : modifier une entree en place
 // ne declencherait pas de rendu, on remplace donc le tableau. webtoon est
-// toujours conserve : les reponses de PUT/PATCH ne prechargent pas ses genres
+// toujours conserve : la reponse de PUT ne precharge pas ses genres
 // (a la difference de GET /user/list).
 function patchEntry(id: string, patch: Partial<UserWebtoon>) {
   entries.value = (entries.value ?? []).map((entry) =>
@@ -128,39 +112,44 @@ function patchEntry(id: string, patch: Partial<UserWebtoon>) {
   )
 }
 
-// Mise a jour optimiste (US-06) : la carte affiche la nouvelle valeur tout de
-// suite, puis prend la reponse serveur (le statut peut passer a "completed")
-// ou revient a l'ancienne valeur en cas d'echec.
-async function updateProgress(entry: UserWebtoon, chaptersRead: number) {
-  if (pendingIds.has(entry.id)) return
-  pendingIds.add(entry.id)
-  const previous = entry.chaptersRead
-  patchEntry(entry.id, { chaptersRead })
-  try {
-    const updated = await $fetch<UserWebtoon>(`${apiBase}/user/list/${entry.id}/progress`, {
-      method: 'PATCH',
-      body: { chaptersRead },
-    })
-    patchEntry(entry.id, updated)
-  } catch (error) {
-    // Retour arriere seulement si l'entree n'a pas change entre-temps : toute
-    // reponse serveur appliquee modifie updatedAt (et une valeur differente
-    // de chaptersRead signale une autre modification locale).
-    const current = entries.value?.find((item) => item.id === entry.id)
-    if (current && current.updatedAt === entry.updatedAt && current.chaptersRead === chaptersRead) {
-      patchEntry(entry.id, { chaptersRead: previous })
-    }
-    toast.error(
-      extractBusinessError(error) ??
-        Object.values(extractValidationErrors(error))[0] ??
-        'La mise à jour de la progression a échoué. Réessaie dans un instant.'
-    )
-  } finally {
-    pendingIds.delete(entry.id)
-  }
+const pageRef = ref<HTMLElement | null>(null)
+const announcement = ref('')
+
+function indexInView(id: string) {
+  return filteredEntries.value.findIndex((entry) => entry.id === id)
 }
 
-// Edition d'une entree (US-07)
+// Le bouton qui avait le focus a disparu (carte sortie de la vue apres
+// edition, +1 ou retrait ; ou +1 masque a la fin de la lecture) : focus sur le
+// bouton titre de la carte a cet index (ou la precedente), sinon sur l'onglet
+// actif, sinon sur l'action de l'etat vide.
+async function focusCardAt(index: number, message: string) {
+  announcement.value = message
+  await nextTick()
+  const root = pageRef.value
+  const cards = root?.querySelectorAll<HTMLElement>('.wt-card__open') ?? []
+  const target =
+    cards[index] ??
+    cards[index - 1] ??
+    root?.querySelector<HTMLElement>('.tab[aria-pressed="true"], .empty a, .empty button')
+  target?.focus()
+}
+
+async function handleIncrement(entry: UserWebtoon) {
+  const index = indexInView(entry.id)
+  const updated = await increment(entry)
+  // Toujours "reading" : le bouton +1 est encore la, le focus aussi.
+  if (!updated || updated.status === 'reading') return
+  const newIndex = indexInView(entry.id)
+  await focusCardAt(
+    newIndex === -1 ? index : newIndex,
+    newIndex === -1
+      ? `${entry.webtoon.title} : ${STATUS_LABELS[updated.status].toLowerCase()}, retiré de l'onglet ${activeTab.value.label}.`
+      : `${entry.webtoon.title} : ${STATUS_LABELS[updated.status].toLowerCase()}.`
+  )
+}
+
+// Edition d'une entree (US-07) : modale ouverte au clic sur la carte.
 const editOpen = ref(false)
 const editTarget = ref<UserWebtoon | null>(null)
 const editErrors = ref<Record<string, string>>({})
@@ -176,7 +165,8 @@ function openEdit(entry: UserWebtoon) {
 
 async function handleEditSubmit(payload: ReadingEntryPayload) {
   if (!editTarget.value || saving.value || pendingIds.has(editTarget.value.id)) return
-  const id = editTarget.value.id
+  const { id, webtoon } = editTarget.value
+  const index = indexInView(id)
   pendingIds.add(id)
   saving.value = true
   editErrors.value = {}
@@ -186,9 +176,14 @@ async function handleEditSubmit(payload: ReadingEntryPayload) {
       method: 'PUT',
       body: payload,
     })
+    // Patch local plutot que refresh() : refresh repasse pending a true, ce
+    // qui demonterait toute la liste et ferait perdre le focus.
     patchEntry(updated.id, updated)
     editOpen.value = false
     toast.success('Ta lecture a été mise à jour.')
+    if (indexInView(id) === -1) {
+      await focusCardAt(index, `${webtoon.title} ne figure plus dans cette vue.`)
+    }
   } catch (error) {
     // Erreur metier sans champ (chapitres > total) en message global, erreurs
     // VineJS sous leur champ, tout le reste en message generique.
@@ -207,45 +202,45 @@ async function handleEditSubmit(payload: ReadingEntryPayload) {
   }
 }
 
-// Retrait de la liste (US-08)
+// Retrait de la liste (US-08), demande depuis la modale d'edition.
 const removeOpen = ref(false)
-const removeTarget = ref<UserWebtoon | null>(null)
 const removing = ref(false)
-const headingRef = ref<HTMLElement | null>(null)
 
-function openRemove(entry: UserWebtoon) {
-  removeTarget.value = entry
+// Une modale a la fois (le piege a focus de chacune ecoute document) : on
+// ferme l'edition, qui rend le focus a la carte, avant d'ouvrir la
+// confirmation, qui le rendra a son tour a la carte en cas d'annulation.
+async function askRemove() {
+  editOpen.value = false
+  await nextTick()
   removeOpen.value = true
 }
 
 async function handleRemove() {
-  if (!removeTarget.value || removing.value) return
+  if (!editTarget.value || removing.value) return
   removing.value = true
-  const id = removeTarget.value.id
+  const id = editTarget.value.id
+  const index = indexInView(id)
   try {
     await $fetch(`${apiBase}/user/list/${id}`, { method: 'DELETE' })
     entries.value = (entries.value ?? []).filter((entry) => entry.id !== id)
     removeOpen.value = false
     toast.success('Webtoon retiré de ta liste.')
-    // Le bouton declencheur a disparu avec la carte : on place le focus sur
-    // le titre de la page pour ne pas le perdre.
-    await nextTick()
-    headingRef.value?.focus()
+    await focusCardAt(index, '')
   } catch {
     toast.error('Le retrait a échoué. Réessaie dans un instant.')
   } finally {
     removing.value = false
   }
 }
-
-function formatRating(rating: number) {
-  return String(rating).replace('.', ',')
-}
 </script>
 
 <template>
-  <main class="page">
-    <h1 ref="headingRef" tabindex="-1">Ma liste</h1>
+  <main ref="pageRef" class="page">
+    <AppPageHeader
+      eyebrow="Ton fil"
+      title="Ma liste"
+      subtitle="Ta progression, tes statuts, tes notes. Le bouton +1 chapitre met à jour ton avancée en un clic ; ouvre une carte pour modifier le reste."
+    />
 
     <p v-if="pending" class="text-secondary">Chargement de la liste...</p>
 
@@ -254,21 +249,54 @@ function formatRating(rating: number) {
       <AppButton variant="outline" size="sm" @click="refresh()">Réessayer</AppButton>
     </div>
 
-    <p v-else-if="entries?.length === 0" class="text-secondary">
-      Ta liste est vide pour l'instant. Ajoute des webtoons depuis le
-      <NuxtLink to="/catalogue">catalogue</NuxtLink>.
-    </p>
+    <div v-else-if="entries?.length === 0" class="empty">
+      <h2>Ta liste est vide</h2>
+      <p>Ajoute des webtoons depuis le catalogue pour suivre ta progression.</p>
+      <AppButton to="/catalogue" variant="outline" size="sm">Parcourir le catalogue</AppButton>
+    </div>
 
     <template v-else>
+      <!-- Groupe de boutons aria-pressed, comme les puces du catalogue : un
+           filtre de la grille, pas des panneaux distincts (pas de tablist). -->
+      <div class="tabs" role="group" aria-label="Statut">
+        <button
+          v-for="tab in tabs"
+          :key="tab.value"
+          type="button"
+          class="tab"
+          :aria-pressed="statusFilter === tab.value"
+          @click="statusFilter = tab.value"
+        >
+          {{ tab.label }}
+          <span class="tab__count">{{ tabCounts[tab.value] ?? 0 }}</span>
+        </button>
+      </div>
+
       <section class="filters" aria-label="Recherche, filtres et tri">
-        <AppInput
-          v-model="search"
-          class="filters__search"
-          label="Rechercher (titre ou auteur)"
-          type="search"
-          placeholder="Ex. : Solo Leveling"
-        />
-        <AppSelect v-model="statusFilter" label="Statut" :options="statusFilterOptions" />
+        <div class="search">
+          <label for="list-search" class="sr-only">Rechercher par titre ou auteur</label>
+          <svg
+            class="search__icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            id="list-search"
+            v-model="search"
+            class="search__field"
+            type="search"
+            placeholder="Titre ou auteur..."
+          >
+        </div>
         <AppSelect v-model="genreFilter" label="Genre" :options="genreFilterOptions" />
         <AppSelect v-model="minRatingFilter" label="Note minimale" :options="minRatingOptions" />
         <AppSelect v-model="sort" label="Trier par" :options="sortOptions" />
@@ -276,145 +304,68 @@ function formatRating(rating: number) {
 
       <div class="toolbar">
         <p class="toolbar__count" aria-live="polite">
-          {{ filteredEntries.length }} {{ filteredEntries.length > 1 ? 'webtoons' : 'webtoon' }}
+          {{ filteredEntries.length }} {{ filteredEntries.length > 1 ? 'titres' : 'titre' }}
         </p>
         <AppButton v-if="hasActiveFilters" variant="ghost" size="sm" @click="resetFilters">
           Réinitialiser
         </AppButton>
       </div>
+      <p class="sr-only" aria-live="polite">{{ announcement }}</p>
 
-      <p v-if="filteredEntries.length === 0" class="text-secondary">
-        Aucun webtoon ne correspond à ces critères.
-      </p>
+      <div v-if="!tabCounts[statusFilter]" class="empty">
+        <h2>{{ activeTab.empty }}</h2>
+        <p>Aucun webtoon de ta liste n'a ce statut pour le moment.</p>
+      </div>
 
-      <div v-else class="grid">
-        <AppCard
+      <div v-else-if="filteredEntries.length === 0" class="empty">
+        <h2>Aucun résultat</h2>
+        <p>Aucun titre ne correspond à ces critères. Essaie un autre terme ou un autre filtre.</p>
+        <AppButton variant="outline" size="sm" @click="resetFilters">
+          Réinitialiser les filtres
+        </AppButton>
+      </div>
+
+      <div v-else class="wt-grid">
+        <WebtoonCard
           v-for="entry in filteredEntries"
           :key="entry.id"
-          class="entry-card"
-        >
-          <template #header>
-            <!-- Le lien du titre s'etend a toute la carte (::after, voir le
-                 style) ; les controles sont places au-dessus. -->
-            <div class="entry-head">
-              <AppCover
-                :src="entry.webtoon.coverUrl"
-                :title="entry.webtoon.title"
-                class="entry-cover"
-              />
-              <h3>
-                <NuxtLink :to="`/catalogue/${entry.webtoonId}`" class="entry-link">
-                  {{ entry.webtoon.title }}
-                </NuxtLink>
-              </h3>
-            </div>
-          </template>
-
-          <p class="text-secondary">{{ entry.webtoon.author }}</p>
-
-          <div class="progress">
-            <p class="text-secondary">
-              <template v-if="entry.webtoon.chaptersTotal">
-                {{ entry.chaptersRead }} / {{ entry.webtoon.chaptersTotal }} chapitres
-              </template>
-              <template v-else>{{ entry.chaptersRead }} chapitres lus</template>
-            </p>
-            <AppButton
-              variant="outline"
-              size="sm"
-              :disabled="!canAddChapter(entry)"
-              :aria-disabled="pendingIds.has(entry.id)"
-              @click="updateProgress(entry, entry.chaptersRead + 1)"
-            >
-              +1 chapitre
-            </AppButton>
-          </div>
-
-          <ReadingProgressInput
-            :chapters-read="entry.chaptersRead"
-            :chapters-total="entry.webtoon.chaptersTotal"
-            :disabled="pendingIds.has(entry.id)"
-            @submit="(value) => updateProgress(entry, value)"
-          />
-
-          <dl
-            v-if="entry.rating !== null || entry.startedAt || entry.finishedAt"
-            class="details"
-          >
-            <template v-if="entry.rating !== null">
-              <dt>Note</dt>
-              <dd>{{ formatRating(entry.rating) }} / 10</dd>
-            </template>
-            <template v-if="entry.startedAt">
-              <dt>Début</dt>
-              <dd>{{ formatDate(entry.startedAt) }}</dd>
-            </template>
-            <template v-if="entry.finishedAt">
-              <dt>Fin</dt>
-              <dd>{{ formatDate(entry.finishedAt) }}</dd>
-            </template>
-          </dl>
-          <!-- Tronque visuellement (CSS line-clamp) : le texte complet reste
-               dans le DOM, lu en entier par les lecteurs d'ecran. -->
-          <p v-if="entry.comment" class="comment">{{ entry.comment }}</p>
-
-          <div v-if="entry.webtoon.genres.length > 0" class="genres">
-            <AppBadge v-for="genre in entry.webtoon.genres" :key="genre.id">
-              {{ genre.name }}
-            </AppBadge>
-          </div>
-
-          <!-- disabled natif (pas aria-disabled) : un <select> aria-disabled
-               changerait quand meme de valeur a l'ecran. -->
-          <AppSelect
-            label="Statut"
-            :model-value="entry.status"
-            :options="statusOptions"
-            :disabled="pendingIds.has(entry.id)"
-            @update:model-value="(value) => handleStatusChange(entry, value as UserWebtoonStatus)"
-          />
-
-          <div class="actions">
-            <AppButton
-              variant="outline"
-              size="sm"
-              :aria-label="`Modifier ma lecture de ${entry.webtoon.title}`"
-              @click="openEdit(entry)"
-            >
-              Modifier
-            </AppButton>
-            <AppButton
-              variant="ghost"
-              size="sm"
-              :aria-label="`Retirer ${entry.webtoon.title} de ma liste`"
-              @click="openRemove(entry)"
-            >
-              Retirer
-            </AppButton>
-          </div>
-        </AppCard>
+          :item="entry"
+          open-mode="event"
+          :busy="pendingIds.has(entry.id)"
+          @open="openEdit(entry)"
+          @increment="handleIncrement(entry)"
+        />
       </div>
     </template>
 
     <AppModal v-model:open="editOpen" :persistent="saving">
       <template #title>Modifier ma lecture</template>
-      <p v-if="editTarget" class="text-secondary modal-subtitle">{{ editTarget.webtoon.title }}</p>
-      <ReadingEntryForm
-        v-if="editTarget"
-        :key="editTarget.id"
-        :entry="editTarget"
-        :errors="editErrors"
-        :global-error="editGlobalError"
-        :submitting="saving"
-        @submit="handleEditSubmit"
-        @cancel="editOpen = false"
-      />
+      <template v-if="editTarget">
+        <p class="text-secondary modal-subtitle">{{ editTarget.webtoon.title }}</p>
+        <ReadingEntryForm
+          :key="editTarget.id"
+          :entry="editTarget"
+          :errors="editErrors"
+          :global-error="editGlobalError"
+          :submitting="saving"
+          @submit="handleEditSubmit"
+          @cancel="editOpen = false"
+        />
+        <div class="modal-extra">
+          <NuxtLink :to="`/catalogue/${editTarget.webtoonId}`" class="modal-extra__link">
+            Voir la fiche du webtoon
+          </NuxtLink>
+          <AppButton variant="ghost" size="sm" :aria-disabled="saving" @click="!saving && askRemove()">
+            Retirer de ma liste
+          </AppButton>
+        </div>
+      </template>
     </AppModal>
 
     <AppModal v-model:open="removeOpen" :persistent="removing">
       <template #title>Retirer ce webtoon de ta liste ?</template>
       <p>
-        Ta progression, ta note et ton commentaire sur {{ removeTarget?.webtoon.title }} seront
+        Ta progression, ta note et ton commentaire sur {{ editTarget?.webtoon.title }} seront
         perdus. Le webtoon reste dans le catalogue.
       </p>
       <template #actions>
@@ -435,21 +386,92 @@ function formatRating(rating: number) {
 </template>
 
 <style scoped>
-.page {
-  padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 1100px;
-  margin: 0 auto;
+/* .tabs du UI kit : onglets soulignes. Compteur en 14px (V5, 12px dans le kit). */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.tab {
+  margin-bottom: -1px;
+  padding: var(--space-3) 18px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  color: var(--color-text-soft);
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+/* Actif : souligne dore et texte encre en gras, pas la seule couleur. */
+.tab[aria-pressed='true'] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.tab__count {
+  margin-left: 6px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--color-text-soft);
 }
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-lg);
+  grid-template-columns: minmax(240px, 2fr) repeat(3, minmax(160px, 1fr));
+  align-items: end;
+  gap: var(--space-3) var(--space-4);
 }
 
-.filters__search {
-  grid-column: 1 / -1;
+/* Champ de recherche en pilule, comme le catalogue. */
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface);
+  color: var(--color-text-soft);
+}
+
+.search:focus-within {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.search__icon {
+  flex-shrink: 0;
+}
+
+/* 16px : evite le zoom automatique de Safari iOS au focus. */
+.search__field {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.search__field:focus-visible {
+  outline: none;
 }
 
 .toolbar {
@@ -457,157 +479,91 @@ function formatRating(rating: number) {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
+  gap: var(--space-2);
+  margin: var(--space-5) 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-line);
 }
 
 .toolbar__count {
   margin: 0;
-  font-weight: 600;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-lg);
-}
-
-.entry-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.entry-card:hover {
-  border-color: var(--color-primary);
-  transform: scale(1.02);
-}
-
-.entry-head {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-}
-
-/* Vignette : la carte porte deja beaucoup de controles, une couverture
-   pleine largeur l'allongerait trop. */
-.entry-cover {
-  flex: 0 0 72px;
-}
-
-.entry-head h3 {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.entry-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Rend toute la carte cliquable sans imbriquer de controles dans un lien. */
-.entry-link::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-
-.entry-link:focus-visible {
-  outline: none;
-}
-
-.entry-card:has(.entry-link:focus-visible) {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
-.entry-card :deep(.app-card__body) {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  flex: 1;
-}
-
-/* Les controles passent au-dessus du ::after du lien de titre : ils gardent
-   leur propre comportement au clic au lieu d'ouvrir la fiche. */
-.entry-card :deep(.app-select),
-.entry-card :deep(.app-input),
-.entry-card :deep(.app-button) {
-  position: relative;
-  z-index: 1;
-}
-
-.progress {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
-}
-
-.progress p {
-  margin: 0;
-}
-
-.details {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--spacing-xs) var(--spacing-sm);
-  margin: 0;
-  font-size: 14px;
-}
-
-.details dt {
-  font-weight: 600;
-}
-
-.details dd {
-  margin: 0;
-}
-
-.comment {
-  margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-small);
   font-style: italic;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-  overflow-wrap: anywhere;
+  color: var(--color-text-soft);
 }
 
-.actions {
+.empty {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-top: auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  text-align: center;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
 
-.modal-subtitle {
-  margin: 0 0 var(--spacing-md);
+.empty h2 {
+  margin: 0;
+  font-size: var(--fs-h3);
 }
 
-h1:focus {
-  outline: none;
-}
-
-.genres {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
+.empty p {
+  max-width: 380px;
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--color-text-soft);
 }
 
 .error-box {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
+  gap: var(--space-2);
+}
+
+.modal-subtitle {
+  margin: 0 0 var(--space-4);
+}
+
+.modal-extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-line);
+}
+
+.modal-extra__link {
+  font-size: var(--fs-small);
+  font-style: italic;
+  color: var(--color-text);
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent);
+  text-underline-offset: var(--space-1);
+}
+
+@media (max-width: 1023px) {
+  .filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 639px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .tab {
+    padding: var(--space-2) var(--space-3);
+  }
 }
 </style>

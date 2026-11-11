@@ -1,9 +1,34 @@
 /*
  * Charte graphique - Le Fil des Chapitres (voir CLAUDE.md section 8).
- * Ne pas introduire de couleur ou de police hors de cette liste sans
- * validation explicite.
+ * Ne pas introduire de couleur ou de police hors de cette liste et des tokens
+ * du UI kit (refonte v0.1.1) sans validation explicite.
  */
+/* Polices auto-hebergees (decision V6) : plus d'appel a Google Fonts. */
+@font-face {
+  font-family: 'Dancing Script';
+  src: url('/fonts/dancing-script/DancingScript-Variable.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display/PlayfairDisplay-Variable.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display/PlayfairDisplay-Italic-Variable.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Tokens repris du UI kit (Maquette/ui-kit/tokens-and-styles.css). */
 :root {
+  /* Teintes de la charte (CLAUDE.md section 8) */
   --color-primary: #8b9b6a;
   --color-blue: #8faec5;
   --color-rose: #c89ba5;
@@ -13,19 +38,83 @@
   --color-text-muted: #8b8b7a;
   --color-bg: #faf8f4;
 
+  /* Nuances plus sombres (survol, appui) */
+  --color-primary-shade: #7a8a59;
+  --color-blue-shade: #7e9db4;
+  --color-rose-shade: #b78a94;
+  --color-beige-shade: #c3b38f;
+  --color-accent-shade: #b4955b;
+
+  /* Teintes claires (surfaces, fonds de tags) */
+  --color-primary-tint: #e4e9d8;
+  --color-blue-tint: #e0e9f0;
+  --color-rose-tint: #f1dfe3;
+  --color-beige-tint: #f0e9d6;
+  --color-accent-tint: #efe2c5;
+
+  /* Neutres chauds */
+  --color-text-soft: #5c5a4d;
+  --color-line: #e6e1d4;
+  --color-line-soft: #efeae0;
+  --color-bg-sunken: #f4efe5;
   --color-surface: #ffffff;
-  --color-border: #e4ded0;
+  --color-border: var(--color-line);
 
-  --font-display: 'Dancing Script', cursive;
-  --font-body: 'Playfair Display', serif;
+  /* Accessibilite (decision V5) */
+  /* Texte sur fond dore : encre, 5.03:1 sur --color-accent (le blanc du UI kit echoue). */
+  --color-on-accent: #3d3b2f;
+  /* Contour de focus : 4.5:1 sur --color-bg. */
+  --color-focus: #8c6e35;
+  /* Bordure des champs : 3.26:1 sur --color-bg (la ligne decorative n'atteint pas 3:1). */
+  --color-field-border: #8b8b7a;
 
-  --radius-md: 8px;
-  --radius-lg: 16px;
+  /* Typographie */
+  --font-display: 'Dancing Script', 'Brush Script MT', cursive;
+  --font-body: 'Playfair Display', Georgia, 'Times New Roman', serif;
 
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
+  --fs-display: 52px;
+  --fs-h1: 44px;
+  --fs-h2: 26px;
+  --fs-h3: 19px;
+  --fs-body: 15px;
+  /* 14px minimum du projet : le UI kit prevoit 13px et 12px. */
+  --fs-small: 14px;
+  --fs-tag: 14px;
+
+  --lh-tight: 1.15;
+  --lh-snug: 1.35;
+  --lh-body: 1.6;
+
+  --letter-tag: 0.18em;
+  --letter-h2: 0.005em;
+
+  /* Rayons */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* Ombres */
+  --shadow-page: 0 1px 0 rgba(61, 59, 47, 0.04);
+  --shadow-card: 0 1px 2px rgba(61, 59, 47, 0.04), 0 6px 18px -8px rgba(61, 59, 47, 0.1);
+  --shadow-lift: 0 2px 4px rgba(61, 59, 47, 0.05), 0 14px 32px -10px rgba(61, 59, 47, 0.18);
+  --shadow-press: inset 0 1px 0 rgba(61, 59, 47, 0.06);
+
+  /* Espacements : echelle du UI kit, anciens noms conserves */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-5);
   --spacing-xl: 40px;
 }
 
@@ -79,6 +168,12 @@ a {
  * - .text-muted : accroche (18px), distinguee par l'italique et non par la
  *   couleur (--color-text, 10.6:1).
  */
+/* Regle globale : les composants n'ont pas a redeclarer leur contour de focus. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 small,
 .text-secondary {
   font-size: 14px;
@@ -89,4 +184,140 @@ small,
   font-size: 18px;
   font-style: italic;
   color: var(--color-text);
+}
+
+/* Grille des cartes webtoon (UI kit .wt-grid) : 4 colonnes en desktop,
+   2 en tablette et mobile, 1 sous 360px. minmax(0, 1fr) : un titre long ne
+   peut pas elargir sa colonne. */
+.wt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .wt-grid {
+    gap: var(--space-5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .wt-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 359px) {
+  .wt-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Tuiles de chiffres du UI kit (.stat-row / .stat), partagees par l'accueil
+   et /statistiques. <dl> : dt = libelle, dd = valeur, affiches valeur en haut
+   via column-reverse. */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.stat__value {
+  margin: 0;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.stat__label {
+  font-size: var(--fs-small);
+  font-style: italic;
+  letter-spacing: var(--letter-tag);
+  text-transform: uppercase;
+  color: var(--color-text-soft);
+}
+
+@media (max-width: 767px) {
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+/* Conteneur principal du UI kit (main) : 1200px max, 1144px utiles. Chaque
+   page porte <main class="page">. */
+.page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 28px 80px;
+}
+
+@media (max-width: 639px) {
+  .page {
+    padding: var(--space-6) var(--space-4) var(--space-8);
+  }
+}
+
+/* Masque visuellement un texte reserve aux lecteurs d'ecran. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Lien d'evitement : hors ecran jusqu'a la prise de focus au clavier. */
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 20;
+  padding: var(--space-2) var(--space-4);
+  font-size: 14px;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-sm);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Grande marge : le saut ramene toujours en haut, sous le header sticky. */
+#contenu {
+  scroll-margin-top: 200px;
+}
+
+#contenu:focus {
+  outline: none;
+}
+
+/* Respect de la preference systeme : les transitions (barres, survols) sont neutralisees. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

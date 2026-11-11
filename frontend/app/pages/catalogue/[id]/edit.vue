@@ -40,7 +40,9 @@ async function handleSubmit(payload: WebtoonFormPayload) {
 
 <template>
   <main class="page">
-    <NuxtLink :to="`/catalogue/${webtoonId}`" class="text-secondary">&larr; Retour a la fiche</NuxtLink>
+    <NuxtLink :to="`/catalogue/${webtoonId}`" class="back-link text-secondary">
+      &larr; Retour a la fiche
+    </NuxtLink>
 
     <div v-if="fetchError" class="error-box">
       <p v-if="fetchError.statusCode === 404">Ce webtoon n'existe pas.</p>
@@ -48,7 +50,7 @@ async function handleSubmit(payload: WebtoonFormPayload) {
     </div>
 
     <template v-else-if="webtoon">
-      <h1>Modifier {{ webtoon.title }}</h1>
+      <AppPageHeader eyebrow="Catalogue" :title="`Modifier ${webtoon.title}`" />
       <WebtoonForm
         :initial-value="webtoon"
         :genres="genres ?? []"
@@ -62,10 +64,9 @@ async function handleSubmit(payload: WebtoonFormPayload) {
 </template>
 
 <style scoped>
-.page {
-  padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 720px;
-  margin: 0 auto;
+.back-link {
+  display: inline-block;
+  margin-bottom: var(--space-4);
 }
 
 .error-box {
