@@ -10,19 +10,56 @@ export default defineNuxtConfig({
   ],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
-    // Prive : uniquement accessible cote serveur (SSR), jamais expose au
-    // navigateur. Le rendu SSR tourne DANS le conteneur frontend, qui doit
-    // joindre le backend via le reseau Docker interne, pas via localhost.
-    apiBaseServer: 'http://backend:3333/api',
-    public: {
-      // Expose au navigateur : utilise apres l'hydratation, quand le code
-      // s'execute sur la machine de l'utilisateur (hors reseau Docker).
-      apiBase: 'http://localhost:3333/api',
+    // Tout est prive (serveur uniquement, jamais envoye au navigateur) et
+    // surchargeable par variable d'environnement NUXT_<CLE_EN_SNAKE_CASE>.
+    // URL du backend jointe par le proxy server/api/[...path].ts
+    // (NUXT_API_UPSTREAM ; en Docker : http://backend:3333/api). Vide par
+    // defaut : en production, server/plugins/check-env.ts refuse alors de
+    // demarrer ; en dev, le proxy repond 502.
+    apiUpstream: '',
+    // Cle X-Api-Key ajoutee par le proxy (NUXT_API_KEY), exigee par le backend
+    // quand son API_KEY est defini.
+    apiKey: '',
+    // Identifiants de la Basic Auth (server/middleware/basic-auth.ts) ;
+    // vides = protection desactivee (dev local uniquement).
+    basicAuthUser: '',
+    basicAuthPassword: '',
+  },
+  // En-tetes de securite en production seulement : en dev, la CSP casserait
+  // le HMR de Vite (websocket, scripts injectes).
+  $production: {
+    routeRules: {
+      '/**': {
+        headers: {
+          'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'same-origin',
+          'X-Frame-Options': 'DENY',
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+          'X-Robots-Tag': 'noindex, nofollow',
+          // 'unsafe-inline' sur script-src : Nuxt injecte des scripts inline
+          // (configuration runtime, payload SSR) sans nonce.
+          'Content-Security-Policy': [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com",
+            "img-src 'self' https: data:",
+            "connect-src 'self'",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "object-src 'none'",
+          ].join('; '),
+        },
+      },
     },
   },
   app: {
     head: {
       title: 'Le Fil des Chapitres',
+      // Instance privee : ne pas indexer (voir aussi public/robots.txt).
+      meta: [{ name: 'robots', content: 'noindex, nofollow' }],
       link: [
         // preconnect : accelere le chargement des polices Google Fonts
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },

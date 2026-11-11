@@ -12,8 +12,8 @@ const {
   data: webtoon,
   error: fetchError,
 } = await useFetch<Webtoon>(`${apiBase}/webtoons/${webtoonId}`, {
-  // Cle stable, independante de l'URL (voir catalogue/index.vue) : necessaire
-  // car apiBase differe entre le SSR et le navigateur.
+  // Cle stable, independante de l'URL (voir catalogue/index.vue) : partagee
+  // entre le SSR et l'hydratation.
   key: `webtoon-${webtoonId}`,
 })
 const { data: genres } = await useFetch<Genre[]>(`${apiBase}/genres`, { key: 'genres' })
