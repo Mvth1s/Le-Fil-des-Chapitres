@@ -48,5 +48,5 @@ repart d'ici.
 
 ## Suggestions de relecture non traitées
 
-- Catalogue : course de quelques ms entre `router.replace` et le watch de `route.query.q`
-  pouvant perdre une frappe (lot 3.2).
+- Catalogue : course entre `router.replace` et le watch de `route.query.q` (lot 3.2),
+  corrigée au lot 3.4 (`lastQ`).
