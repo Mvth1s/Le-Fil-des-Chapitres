@@ -62,12 +62,6 @@ async function handleSubmit(payload: WebtoonFormPayload) {
 </template>
 
 <style scoped>
-.page {
-  padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 720px;
-  margin: 0 auto;
-}
-
 .error-box {
   margin-top: var(--spacing-md);
 }

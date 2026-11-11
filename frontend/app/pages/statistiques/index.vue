@@ -75,12 +75,6 @@ const {
 </template>
 
 <style scoped>
-.page {
-  padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 720px;
-  margin: 0 auto;
-}
-
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

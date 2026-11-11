@@ -121,7 +121,7 @@ function handleSubmit() {
   flex-direction: column;
   gap: var(--spacing-md);
   max-width: 480px;
-  /* margin-inline: auto centre le formulaire dans .page (max-width: 720px),
+  /* margin-inline: auto centre le formulaire dans .page,
      sinon il colle au bord gauche du conteneur. */
   margin: var(--spacing-lg) auto 0;
 }
