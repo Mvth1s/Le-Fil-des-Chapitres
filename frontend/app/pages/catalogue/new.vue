@@ -38,11 +38,3 @@ async function handleSubmit(payload: WebtoonFormPayload) {
     />
   </main>
 </template>
-
-<style scoped>
-.page {
-  padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 720px;
-  margin: 0 auto;
-}
-</style>

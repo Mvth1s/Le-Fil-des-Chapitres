@@ -288,12 +288,6 @@ const statusOptions = [
 </template>
 
 <style scoped>
-.page {
-  padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 960px;
-  margin: 0 auto;
-}
-
 section {
   margin-top: var(--spacing-xl);
 }

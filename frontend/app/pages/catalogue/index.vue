@@ -43,8 +43,29 @@ function handleIncrement(webtoonId: string) {
 
 // Filtrage cote client : le catalogue est petit (usage personnel), un
 // filtrage serveur n'apporterait rien.
-const search = ref('')
+const route = useRoute()
+const router = useRouter()
+
+// Recherche lue dans ?q= (recherche globale du header, decision V8) au
+// chargement et a chaque changement d'URL ; en retour, la saisie (debouncee)
+// est recopiee dans l'URL par replace, sans empiler d'historique.
+function queryText(): string {
+  return typeof route.query.q === 'string' ? route.query.q : ''
+}
+const search = ref(queryText())
 const debouncedSearch = useDebouncedRef(search, 300)
+// Garde : apres notre propre replace, q vaut deja la valeur debouncee ; ne
+// pas ecraser ce que l'utilisateur a tape entre-temps.
+watch(
+  () => route.query.q,
+  () => {
+    if (queryText() !== debouncedSearch.value) search.value = queryText()
+  }
+)
+watch(debouncedSearch, (value) => {
+  if (value === queryText()) return
+  void router.replace({ query: { ...route.query, q: value || undefined } })
+})
 const genreId = ref('')
 const status = ref<CatalogueCriteria['status']>('')
 const author = ref('')
@@ -110,8 +131,6 @@ function resetFilters() {
 
 // Vue grille / liste memorisee dans l'URL (?vue=liste) : survit au
 // rechargement et au partage du lien, sans souci d'hydratation SSR.
-const route = useRoute()
-const router = useRouter()
 const view = computed(() => (route.query.vue === 'liste' ? 'list' : 'grid'))
 function setView(next: 'grid' | 'list') {
   void router.replace({ query: { ...route.query, vue: next === 'list' ? 'liste' : undefined } })
@@ -240,12 +259,6 @@ function setView(next: 'grid' | 'list') {
 </template>
 
 <style scoped>
-.page {
-  padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
 .page-header {
   display: flex;
   align-items: baseline;

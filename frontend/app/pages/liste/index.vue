@@ -436,12 +436,6 @@ function formatRating(rating: number) {
 </template>
 
 <style scoped>
-.page {
-  padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
 .filters {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
