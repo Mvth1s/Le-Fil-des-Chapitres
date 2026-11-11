@@ -13,6 +13,16 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * response to the client
    */
   async handle(error: unknown, ctx: HttpContext) {
+    /*
+    | Outside debug mode the parent handler answers { message: error.message },
+    | and for an unexpected error (5xx) that message can be internal (SQL,
+    | driver, file path). It is replaced by a generic body; the full error is
+    | still logged by report(). 4xx errors (404, 422...) keep their useful body.
+    */
+    const httpError = this.toHttpError(error)
+    if (!this.debug && httpError.status >= 500) {
+      return ctx.response.status(httpError.status).send({ message: 'Internal server error' })
+    }
     return super.handle(error, ctx)
   }
 

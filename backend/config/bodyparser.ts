@@ -13,6 +13,7 @@ const bodyParserConfig = defineConfig({
    */
   form: {
     convertEmptyStringsToNull: true,
+    limit: '100kb',
     types: ['application/x-www-form-urlencoded'],
   },
 
@@ -21,6 +22,8 @@ const bodyParserConfig = defineConfig({
    */
   json: {
     convertEmptyStringsToNull: true,
+    // A webtoon with its description stays far below this limit.
+    limit: '100kb',
     types: [
       'application/json',
       'application/json-patch+json',
@@ -30,25 +33,16 @@ const bodyParserConfig = defineConfig({
   },
 
   /**
-   * Config for the "multipart/form-data" content-type parser.
-   * File uploads are handled by the multipart parser.
+   * Multipart disabled: no upload exists (cover_url only accepts external
+   * URLs, CLAUDE.md section 11). An empty "types" list means no request is
+   * ever treated as multipart, so nothing is written to the tmp folder.
    */
   multipart: {
-    /**
-     * Enabling auto process allows bodyparser middleware to
-     * move all uploaded files inside the tmp folder of your
-     * operating system
-     */
-    autoProcess: true,
+    autoProcess: false,
     convertEmptyStringsToNull: true,
     processManually: [],
-
-    /**
-     * Maximum limit of data to parse including all files
-     * and fields
-     */
-    limit: '20mb',
-    types: ['multipart/form-data'],
+    limit: '100kb',
+    types: [],
   },
 })
 

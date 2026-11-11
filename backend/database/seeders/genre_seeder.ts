@@ -24,15 +24,23 @@ const GENRE_NAMES = [
   'Surnaturel',
 ]
 
+/**
+ * Garantit la presence des 14 genres. Exportee pour etre reutilisee par
+ * bootstrap_seeder.ts (deploiement en production).
+ */
+export async function ensureGenres() {
+  const genres = GENRE_NAMES.map((name) => ({
+    name,
+    slug: string.slug(name, { lower: true }),
+  }))
+
+  // updateOrCreateMany : idempotent, evite les doublons si le seeder est
+  // relance (base sur l'unicite de "slug").
+  await Genre.updateOrCreateMany('slug', genres)
+}
+
 export default class extends BaseSeeder {
   async run() {
-    const genres = GENRE_NAMES.map((name) => ({
-      name,
-      slug: string.slug(name, { lower: true }),
-    }))
-
-    // updateOrCreateMany : idempotent, evite les doublons si le seeder est
-    // relance (base sur l'unicite de "slug").
-    await Genre.updateOrCreateMany('slug', genres)
+    await ensureGenres()
   }
 }
