@@ -96,10 +96,10 @@ Points clés :
 
 | Mesure | Détail | Fichier |
 |---|---|---|
-| Proxy Nitro | Le navigateur ne parle qu'au frontend ; `/api/**` est relayé côté serveur. En-têtes client relayés par liste blanche (`accept`, `content-type`, `accept-language`) : jamais `Authorization`, `Cookie` ni `Host`. Segments `.` / `..` refusés (400), redirections non suivies, erreur réseau en 502 générique | `frontend/server/api/[...path].ts` |
+| Proxy Nitro | Le navigateur ne parle qu'au frontend ; `/api/**` est relayé côté serveur. En-têtes client relayés par liste blanche (`accept`, `content-type`, `accept-language`) : jamais `Authorization`, `Cookie` ni `Host`. Segments `.` / `..` refusés (400), redirections non suivies, erreur réseau en 502 générique. Délai de 10 s vers l'amont, lecture de la réponse comprise (504), corps entrant limité à 100 ko (413 sans appeler le backend) ; un corps chunked est lu en mémoire avant le contrôle (raccourci documenté dans le fichier, plafond de la plateforme) | `frontend/server/api/[...path].ts` |
 | Basic Auth | Devant tout ce que sert Nitro (pages SSR, `/api`). Comparaison à temps constant (`timingSafeEqual` sur SHA-256), les deux comparaisons toujours exécutées | `frontend/server/middleware/basic-auth.ts` |
 | Clé `X-Api-Key` | Ajoutée par le proxy, exigée par le backend sur tout `/api` quand `API_KEY` est défini (toujours en production). Comparaison à temps constant, clé jamais loguée | `backend/app/middleware/api_key_middleware.ts`, `backend/start/routes.ts`, `backend/start/kernel.ts` |
-| `/health` public | Hors `/api`, sans clé ; répond seulement `ok` / `error`, sans version ni détail | `backend/start/routes.ts` |
+| `/health` public | Hors `/api`, sans clé ; répond seulement `ok` / `error`, sans version ni détail. C'est la seule route publique : aucune route `GET /` | `backend/start/routes.ts` |
 | En-têtes de sécurité | HSTS, `nosniff`, `Referrer-Policy: same-origin`, `X-Frame-Options: DENY`, `Permissions-Policy`, CSP (`frame-ancestors 'none'`, `object-src 'none'`, `connect-src 'self'`...), en production via `routeRules` | `frontend/nuxt.config.ts` |
 | CORS liste blanche | Origines lues dans `CORS_ORIGINS`, vide en production (aucun accès cross-origin), `credentials: false` | `backend/config/cors.ts` |
 | 500 génériques | En production, toute erreur 5xx renvoie `{ "message": "Internal server error" }` ; l'erreur complète reste dans les logs | `backend/app/exceptions/handler.ts` |
@@ -107,7 +107,7 @@ Points clés :
 | Limites de corps | JSON et formulaires limités à 100 ko, multipart désactivé (aucun upload) | `backend/config/bodyparser.ts` |
 | Logs sans secrets | Redaction de `authorization`, `cookie`, `x-api-key`, `password` ; le plugin `check-env` ne cite que des noms de clés | `backend/config/logger.ts`, `frontend/server/plugins/check-env.ts` |
 | Non-indexation | `Disallow: /`, meta `robots` et en-tête `X-Robots-Tag: noindex, nofollow` | `frontend/public/robots.txt`, `frontend/nuxt.config.ts` |
-| Ports locaux | PostgreSQL et Adminer liés à `127.0.0.1` (Docker contourne le pare-feu de l'hôte) | `docker-compose.yml` |
+| Ports locaux | PostgreSQL (5432), backend (3333), frontend (3000) et Adminer (8080) liés à `127.0.0.1` (Docker contourne le pare-feu de l'hôte) | `docker-compose.yml` |
 | Validation serveur | Validators AdonisJS avant tout accès à la base | `backend/app/validators/` |
 
 ### 2.5 Dépendances, dépôt et livraison
@@ -116,10 +116,12 @@ Points clés :
 |---|---|---|
 | `npm audit` bloquant | `--omit=dev --audit-level=high` sur backend et frontend, à chaque PR | `.github/workflows/ci.yml` (job `deps-audit`) |
 | gitleaks bloquant | Binaire officiel 8.30.1 vérifié par SHA-256, scan des commits de la PR, `--redact` | `.github/workflows/ci.yml` (job `secrets-scan`) |
-| Faux positifs tracés | Une seule exception, commentée (exemple de documentation, aucune clé réelle) | `.gitleaksignore` |
+| Faux positifs tracés | Chaque exception est commentée (exemples de commande curl issus de la documentation, aucune clé réelle) | `.gitleaksignore` |
 | Dependabot | Hebdomadaire : npm backend, npm frontend, GitHub Actions ; 5 PR max par écosystème | `.github/dependabot.yml` |
 | Actions épinglées par SHA | `actions/checkout`, `actions/setup-node` épinglées par SHA complet, tag en commentaire | `.github/workflows/ci.yml`, `.github/workflows/deploy-backend.yml` |
-| Permissions minimales | `permissions: contents: read` sur les deux workflows | `.github/workflows/ci.yml`, `.github/workflows/deploy-backend.yml` |
+| Permissions minimales | `permissions: contents: read` sur les deux workflows ; `persist-credentials: false` sur chaque `actions/checkout` (le jeton n'est pas laissé dans `.git/config`) | `.github/workflows/ci.yml`, `.github/workflows/deploy-backend.yml` |
+| Échec explicite des scripts | `shell: bash` au niveau du job de déploiement : `-eo pipefail`, une commande en échec dans un tube arrête le step | `.github/workflows/deploy-backend.yml` |
+| Rollback préservé | Le nettoyage des anciennes releases ne supprime jamais la release en service ni la cible précédente de `current` | `.github/workflows/deploy-backend.yml` (step "Migrate, grant, bootstrap and switch") |
 | Clé SSH de déploiement dédiée | Clé privée en secret `ALWAYSDATA_SSH_KEY`, écrite en fichier 600 sous `RUNNER_TEMP`, supprimée en fin de job (`if: always()`) | `.github/workflows/deploy-backend.yml` |
 | Hôte SSH vérifié | `known_hosts` fourni en secret, `StrictHostKeyChecking yes`, `BatchMode yes` (pas d'essais répétés qui bloqueraient l'IP du runner) | `.github/workflows/deploy-backend.yml` |
 | Entrées contrôlées | `ALWAYSDATA_APP_DIR`, `ALWAYSDATA_SITE_ID`, `ALWAYSDATA_ACCOUNT`, `ALWAYSDATA_API_TOKEN` validés par expression régulière avant usage | `.github/workflows/deploy-backend.yml` |
@@ -135,6 +137,9 @@ Points clés :
 | Jeton API alwaysdata non restreignable nativement | Un jeton a les droits du profil qui le crée (H7) | Profil alwaysdata dédié avec la seule permission "Sites" (**non vérifiable dans le dépôt**) |
 | Restrictions des agents Claude déclaratives | Aucune règle `permissions.deny` (pas de `.claude/settings.json`) n'impose les interdits | Décision de Mvth1s (audit lot 3, M3) |
 | Données hébergées en France (H10) | alwaysdata : serveurs en région parisienne, chiffrement au repos ; datacenter de sauvegarde d'un prestataire non nommé | Accepté |
+| Isolation partielle des secrets du workflow | `npm ci` tourne sans secret, mais un script `postinstall` d'une dépendance pourrait écrire dans `$GITHUB_ENV` et influencer les steps suivants, qui eux reçoivent des secrets (`.github/workflows/deploy-backend.yml`, step "Build backend") | Accepté ; atténué par `npm audit`, Dependabot et le lockfile |
+| Secrets `_owner` dans l'environnement distant | Pendant le déploiement, `DB_PASSWORD` de `_owner` est exporté dans l'environnement des process `node ace` et `psql` sur alwaysdata, lisible par le même utilisateur Unix que le site (`.github/workflows/deploy-backend.yml`, step "Migrate, grant, bootstrap and switch") | Accepté : exposition limitée à la durée du déploiement, jamais écrit sur disque |
+| `_app` a le DML sur `adonis_schema*` | `grants.sql` accorde le DML sur toutes les tables du schéma `public`, y compris les tables de suivi des migrations (`backend/database/sql/grants.sql`) | Accepté en 0.1.0 ; révoquer ces tables pour `_app` en amélioration future |
 | Images Docker par tag | `postgres:16`, `adminer:4`, `node:24-alpine` non épinglées par digest ; Dependabot ne couvre pas l'écosystème `docker` | Local et CI uniquement ; digest en amélioration future (audit lot 2, constat 10) |
 
 ---
@@ -175,7 +180,8 @@ même après suppression du commit.
 | Haute | Sauvegardes externes chiffrées : `pg_dump` régulier avec le compte `_ro`, chiffré, stocké hors alwaysdata (les sauvegardes Free ne couvrent que 3 jours) | Moyen |
 | Haute | Surveillance et alertes : sonde externe sur `/health` (avec délai de requête pour détecter les lenteurs et la mise en veille), alerte sur échec du workflow de déploiement | Faible |
 | Haute | Activer la protection de branche sur `main` et `dev` (PR et CI obligatoires) | Faible |
-| Moyenne | Timeout du proxy vers l'amont : `fetch` sans délai maximal dans `frontend/server/api/[...path].ts` | Faible |
+| Moyenne | Retirer à `_app` le DML sur `adonis_schema` et `adonis_schema_versions` (`REVOKE` dans `grants.sql`) | Faible |
+| Basse | Durcir l'isolation du workflow : `npm ci --ignore-scripts` au build si les dépendances le permettent | Faible |
 | Moyenne | Rotation périodique planifiée des secrets (section 3), au moins annuelle et à chaque doute | Faible |
 | Moyenne | Audit OWASP ASVS niveau 1 complet | Moyen |
 | Basse | CSP sans `'unsafe-inline'` (nonces sur les scripts Nuxt) | Élevé |

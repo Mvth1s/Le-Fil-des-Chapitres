@@ -113,7 +113,9 @@ services:
       NUXT_BASIC_AUTH_USER: ${NUXT_BASIC_AUTH_USER:-}
       NUXT_BASIC_AUTH_PASSWORD: ${NUXT_BASIC_AUTH_PASSWORD:-}
     ports:
-      - '3000:3000'
+      # Lie a 127.0.0.1 : en local, le proxy relaie /api sans cle ni Basic
+      # Auth, le frontend ne doit pas etre joignable depuis le reseau local.
+      - '127.0.0.1:3000:3000'
     volumes:
       - ./frontend:/app:Z
       - /app/node_modules

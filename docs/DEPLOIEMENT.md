@@ -207,8 +207,13 @@ Contrôle possible, avec le jeton (la limite de l'API est de 10 requêtes par mi
 sans authentification) :
 
 ```bash
-curl -s --basic -u "<jeton> account=<compte>:" https://api.alwaysdata.com/v1/site/ | head -c 300
+read -rs TOKEN; ACCOUNT=<compte>
+printf 'user = "%s account=%s:"\n' "$TOKEN" "$ACCOUNT" \
+  | curl -s --basic -K - https://api.alwaysdata.com/v1/site/ | head -c 300
 ```
+
+Le jeton est lu en saisie masquée et passé à `curl` par l'entrée standard : il
+n'apparaît ni dans l'historique du shell ni dans `ps`.
 
 ## 6. Environnement GitHub `production` et secrets
 
@@ -474,8 +479,10 @@ ln -sfn <APP_DIR>/releases/<release-precedente> <APP_DIR>/current.tmp \
 Puis redémarrer le site : **Web > Sites > Restart**, ou
 
 ```bash
-curl -fsS -X POST --basic -u "<jeton> account=<compte>:" \
-  https://api.alwaysdata.com/v1/site/<ALWAYSDATA_SITE_ID>/restart/
+read -rs TOKEN; ACCOUNT=<compte>
+printf 'user = "%s account=%s:"\n' "$TOKEN" "$ACCOUNT" \
+  | curl -fsS -X POST --basic -K - \
+    https://api.alwaysdata.com/v1/site/<ALWAYSDATA_SITE_ID>/restart/
 ```
 
 Seules la release en service et la précédente sont conservées. Pour annuler une

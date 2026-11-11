@@ -1,3 +1,10 @@
 # Faux positif : exemple de commande curl copie de la documentation officielle
 # alwaysdata (aucune cle reelle), reformule dans le commit suivant.
 bc15dbcd0af4a8d58d11eb35c8ae6658b5470f92:docs/release-0.1.0.md:curl-auth-user:72
+
+# Faux positifs : exemples curl --basic de docs/DEPLOIEMENT.md (commit
+# 430d128) avec des marqueurs a la place du jeton API alwaysdata, aucune
+# valeur reelle. La CI scanne chaque commit de la PR, d'ou l'empreinte
+# meme si le texte est reformule ensuite.
+430d128df18d7dec0ec483caeebcf39ca924eaab:docs/DEPLOIEMENT.md:curl-auth-user:208
+430d128df18d7dec0ec483caeebcf39ca924eaab:docs/DEPLOIEMENT.md:curl-auth-user:475

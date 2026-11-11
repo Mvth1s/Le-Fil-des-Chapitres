@@ -16,12 +16,6 @@ const GenresController = () => import('#controllers/genres_controller')
 const UserListController = () => import('#controllers/user_list_controller')
 const StatsController = () => import('#controllers/stats_controller')
 
-router.get('/', async () => {
-  return {
-    hello: 'world',
-  }
-})
-
 /*
 | Public health check (UptimeRobot, alwaysdata), outside /api so it needs
 | no X-Api-Key. Reports only up/down: no version, no error detail.

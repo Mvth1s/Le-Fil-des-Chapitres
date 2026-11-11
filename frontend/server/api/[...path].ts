@@ -9,12 +9,17 @@
  *   Auth du navigateur), Cookie ni Host ne partent vers le backend ;
  * - reponse renvoyee telle quelle (code, corps, content-type), y compris les
  *   422 de validation, mais sans les autres en-tetes du backend ;
- * - erreur reseau vers le backend : 502 generique, sans detail interne.
+ * - erreur reseau vers le backend : 502 generique, sans detail interne ;
+ * - delai depasse : 504 ; corps entrant > 100 ko : 413 sans appeler le backend.
  */
 const FORWARDED_HEADERS = ['accept', 'content-type', 'accept-language']
 const BODY_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
 // Statuts qui interdisent un corps de reponse (new Response leve sinon).
 const NULL_BODY_STATUSES = [101, 204, 205, 304]
+// Meme limite que le bodyparser du backend (100kb = 100 * 1024 octets).
+const MAX_BODY_BYTES = 100 * 1024
+// Au-dela, on renvoie 504 plutot que de bloquer la fonction jusqu'a sa limite.
+const UPSTREAM_TIMEOUT_MS = 10_000
 
 export default defineEventHandler(async (event) => {
   const { apiUpstream, apiKey } = useRuntimeConfig(event)
@@ -48,9 +53,20 @@ export default defineEventHandler(async (event) => {
   }
   if (apiKey) headers['x-api-key'] = apiKey
 
+  // content-length d'abord (rejet sans lire le corps), puis taille reelle lue
+  // (corps chunked ou en-tete mensonger).
+  // shortcut: un corps chunked est lu en entier avant le controle ; acceptable
+  // car la plateforme plafonne deja la taille des requetes (4,5 Mo sur Vercel).
+  const tooLarge = () => {
+    setResponseStatus(event, 413)
+    return { message: 'Payload too large' }
+  }
+  if (Number(getRequestHeader(event, 'content-length') ?? 0) > MAX_BODY_BYTES) return tooLarge()
   const body = BODY_METHODS.includes(event.method) ? await readRawBody(event, false) : undefined
+  if (body && body.length > MAX_BODY_BYTES) return tooLarge()
 
   let upstream: Response
+  let upstreamBody: ArrayBuffer | null
   try {
     upstream = await fetch(target, {
       method: event.method,
@@ -59,14 +75,21 @@ export default defineEventHandler(async (event) => {
       body: body ? new Uint8Array(body) : undefined,
       // Une redirection du backend est renvoyee telle quelle, pas suivie.
       redirect: 'manual',
+      // Couvre aussi la lecture du corps de la reponse ci-dessous.
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     })
-  } catch {
+    upstreamBody = NULL_BODY_STATUSES.includes(upstream.status) ? null : await upstream.arrayBuffer()
+  } catch (error) {
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      setResponseStatus(event, 504)
+      return { message: 'Gateway timeout' }
+    }
     setResponseStatus(event, 502)
     return { message: 'Bad gateway' }
   }
 
   const contentType = upstream.headers.get('content-type')
-  return new Response(NULL_BODY_STATUSES.includes(upstream.status) ? null : await upstream.arrayBuffer(), {
+  return new Response(upstreamBody, {
     status: upstream.status,
     headers: contentType ? { 'content-type': contentType } : {},
   })
