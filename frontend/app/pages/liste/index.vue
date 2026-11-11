@@ -3,6 +3,7 @@ import type { UserWebtoon, UserWebtoonStatus } from '~/types/user-webtoon'
 
 const apiBase = useApiBase()
 const router = useRouter()
+const toast = useToast()
 const {
   data: entries,
   pending,
@@ -64,7 +65,7 @@ async function handleStatusChange(entry: UserWebtoon, newStatus: string) {
     })
     await refresh()
   } catch {
-    alert('Le changement de statut a echoue. Reessaie dans un instant.')
+    toast.error('Le changement de statut a echoue. Reessaie dans un instant.')
   } finally {
     updatingId.value = null
   }
@@ -87,7 +88,7 @@ async function handleAddChapter(entry: UserWebtoon) {
     // l'utiliser directement casserait l'affichage des genres sur cette carte.
     await refresh()
   } catch {
-    alert("La mise a jour de la progression a echoue. Reessaie dans un instant.")
+    toast.error("La mise a jour de la progression a echoue. Reessaie dans un instant.")
   } finally {
     updatingId.value = null
   }

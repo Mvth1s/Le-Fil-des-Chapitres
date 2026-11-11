@@ -3,5 +3,6 @@
     <NuxtRouteAnnouncer />
     <AppNavbar />
     <NuxtPage />
+    <AppToast />
   </div>
 </template>

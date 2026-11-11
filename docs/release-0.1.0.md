@@ -7,7 +7,7 @@ Si une session s'interrompt, la suivante repart d'ici.
 
 - [x] Lot 1 : audit et vérification des hypothèses (rapport sécurité : `docs/audits/securite-2026-11-10-lot1.md`)
 - [x] Lot 2 : `fix/security-baseline-secrets` (PR #18) (testé sur clone propre : compose up OK, rôles owner/app/ro, CRUD via `_app`)
-- [ ] Lot 3 : `docs/agents-and-alignment`
+- [x] Lot 3 : `docs/agents-and-alignment` (PR #19)
 - [ ] Lot 4 : fonctionnalités manquantes
 - [ ] Lot 5 : `test/backend-reading-list-and-stats`
 - [ ] Lot 6 : `deploy/alwaysdata-vercel`
