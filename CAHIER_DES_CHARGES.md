@@ -536,7 +536,7 @@ Sans image, la couverture est un dégradé suivi d'une pile de livres. Neuf dég
 | Corps de texte, labels | Playfair Display | Regular 400 | 14–16px |
 | Badges, tags, statuts | Playfair Display | Italic 400 | 14px |
 
-Échelle des tokens : affichage 52px, H1 44px, H2 26px, H3 19px, corps 15px, petit texte et tags 14px. La taille minimale est 14px partout, tags et badges compris (le UI kit prévoit 12 et 13px).
+Échelle des tokens (valeurs de référence du UI kit ; les titres `h1` et `h2` restent fluides dans `main.css`) : affichage 52px, H1 44px, H2 26px, H3 19px, corps 15px, petit texte et tags 14px. La taille minimale est 14px partout, tags et badges compris (le UI kit prévoit 12 et 13px).
 
 ### Polices auto-hébergées
 

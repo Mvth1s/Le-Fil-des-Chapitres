@@ -17,6 +17,7 @@ Refonte visuelle alignée sur le UI kit Claude Design.
 - Couvertures générées (9 dégradés, pile de livres), pastille de statut, tags de genre et carte webtoon (#41).
 - Accueil en tableau de bord (#43).
 - Données de démonstration plus riches pour le développement (#48).
+- Respect de `prefers-reduced-motion` : transitions neutralisées sur demande du système.
 
 ### Modifié
 
