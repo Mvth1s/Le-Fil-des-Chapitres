@@ -30,6 +30,16 @@ const [
 const statusByWebtoonId = computed(
   () => new Map((entries.value ?? []).map((entry) => [entry.webtoonId, entry.status]))
 )
+// Carte de la vue grille : l'entree de liste si le webtoon y est (chip de
+// statut, progression, +1), sinon le webtoon seul.
+const entryByWebtoonId = computed(
+  () => new Map((entries.value ?? []).map((entry) => [entry.webtoonId, entry]))
+)
+const { increment, pendingIds } = useChapterIncrement(entries)
+function handleIncrement(webtoonId: string) {
+  const entry = entryByWebtoonId.value.get(webtoonId)
+  if (entry) void increment(entry)
+}
 
 // Filtrage cote client : le catalogue est petit (usage personnel), un
 // filtrage serveur n'apporterait rien.
@@ -187,29 +197,14 @@ function setView(next: 'grid' | 'list') {
         Aucun titre ne correspond à ces critères.
       </p>
 
-      <div v-else-if="view === 'grid'" class="grid">
-        <NuxtLink
+      <div v-else-if="view === 'grid'" class="wt-grid grid">
+        <WebtoonCard
           v-for="webtoon in results"
           :key="webtoon.id"
-          :to="`/catalogue/${webtoon.id}`"
-          class="card-link"
-        >
-          <AppCard>
-            <template #header>
-              <AppCover :src="webtoon.coverUrl" :title="webtoon.title" class="card-cover" />
-              <h3>{{ webtoon.title }}</h3>
-            </template>
-
-            <p class="text-secondary">{{ webtoon.author }}</p>
-            <p v-if="webtoon.chaptersTotal" class="text-secondary">
-              {{ webtoon.chaptersTotal }} chapitres
-            </p>
-
-            <div v-if="webtoon.genres.length > 0" class="genres">
-              <AppBadge v-for="genre in webtoon.genres" :key="genre.id">{{ genre.name }}</AppBadge>
-            </div>
-          </AppCard>
-        </NuxtLink>
+          :item="entryByWebtoonId.get(webtoon.id) ?? webtoon"
+          :busy="pendingIds.has(entryByWebtoonId.get(webtoon.id)?.id ?? '')"
+          @increment="handleIncrement(webtoon.id)"
+        />
       </div>
 
       <div
@@ -264,52 +259,7 @@ function setView(next: 'grid' | 'list') {
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--spacing-lg);
   margin-top: var(--spacing-lg);
-}
-
-/* Toute la carte est cliquable : le lien s'affiche en bloc et n'emprunte
-   pas l'apparence par defaut des liens (le style vient de AppCard).
-   display:flex + height:100% : chaque carte occupe toute la hauteur de sa
-   ligne de grille (par defaut deja egale entre les cartes d'une meme
-   ligne), au lieu de s'arreter a la hauteur de son propre contenu. */
-.card-link {
-  display: flex;
-  height: 100%;
-  color: inherit;
-  text-decoration: none;
-}
-
-.card-link :deep(.app-card) {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.card-link:hover :deep(.app-card) {
-  border-color: var(--color-primary);
-  transform: scale(1.02);
-}
-
-.card-link:focus-visible :deep(.app-card) {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.card-cover {
-  margin-bottom: var(--spacing-md);
-}
-
-.genres {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  margin-top: var(--spacing-sm);
 }
 
 .error-box {

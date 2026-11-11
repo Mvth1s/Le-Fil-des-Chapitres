@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { Webtoon } from '~/types/webtoon'
+import { USER_WEBTOON_STATUSES, type UserWebtoon, type UserWebtoonStatus } from '~/types/user-webtoon'
+
 const inputValue = ref('')
 const selectValue = ref('reading')
 const modalOpen = ref(false)
@@ -43,6 +46,52 @@ const typeScale = [
   { token: '--fs-small', font: 'var(--font-body)', label: 'Libellé, légende' },
   { token: '--fs-tag', font: 'var(--font-body)', label: 'Tag, badge' },
 ]
+
+// Donnees de demonstration de WebtoonCard (aucun appel API).
+function demoWebtoonOf(id: string, title: string, author: string, chaptersTotal: number | null, genres: string[]): Webtoon {
+  return {
+    id,
+    title,
+    author,
+    chaptersTotal,
+    description: null,
+    coverUrl: null,
+    link: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    genres: genres.map((name) => ({ id: name, name, slug: name })),
+  }
+}
+
+function demoEntryOf(webtoon: Webtoon, status: UserWebtoonStatus, chaptersRead: number): UserWebtoon {
+  return {
+    id: `entry-${webtoon.id}`,
+    userId: 'demo-user',
+    webtoonId: webtoon.id,
+    status,
+    chaptersRead,
+    rating: null,
+    comment: null,
+    startedAt: null,
+    finishedAt: null,
+    createdAt: webtoon.createdAt,
+    updatedAt: webtoon.updatedAt,
+    webtoon,
+  }
+}
+
+const demoWebtoon = demoWebtoonOf('demo-1', 'Tower of God', 'SIU', 620, ['Aventure', 'Mystère', 'Action'])
+const demoReading = reactive(
+  demoEntryOf(demoWebtoonOf('demo-4', 'Solo Leveling', 'Chugong', 179, ['Action', 'Fantasy']), 'reading', 117)
+)
+const demoCompleted = demoEntryOf(
+  demoWebtoonOf('demo-2', 'Lore Olympus', 'Rachel Smythe', 270, ['Romance', 'Fantasy']),
+  'completed',
+  270
+)
+const demoNoTotal = reactive(
+  demoEntryOf(demoWebtoonOf('demo-5', 'Omniscient Reader', 'Sing Shong', null, ['Surnaturel']), 'reading', 73)
+)
 
 const statusOptions = [
   { label: 'En cours', value: 'reading' },
@@ -107,14 +156,7 @@ const statusOptions = [
     <section>
       <h2>Tags de genre</h2>
       <div class="row">
-        <span
-          v-for="name in genreNames"
-          :key="name"
-          class="tag"
-          :style="{ background: genreColors(name).bg, color: genreColors(name).fg }"
-        >
-          {{ name }}
-        </span>
+        <AppGenreTag v-for="name in genreNames" :key="name" :name="name" />
       </div>
     </section>
 
@@ -143,6 +185,10 @@ const statusOptions = [
 
     <section>
       <h2>Chips de statut</h2>
+      <div class="row">
+        <AppStatusChip v-for="status in USER_WEBTOON_STATUSES" :key="status" :status="status" />
+      </div>
+      <h3 class="subtitle">Badges (AppBadge)</h3>
       <div class="row">
         <AppBadge variant="reading">En cours</AppBadge>
         <AppBadge variant="completed">Terminé</AppBadge>
@@ -179,9 +225,38 @@ const statusOptions = [
     <section>
       <h2>Couverture</h2>
       <div class="row">
-        <AppCover class="cover-demo" src="/logo-icon.png" title="Le Fil des Chapitres" />
-        <AppCover class="cover-demo" title="Tower of God" />
-        <AppCover class="cover-demo" src="data:image/png;base64,invalide" title="Image cassée" />
+        <AppCover
+          class="cover-demo"
+          src="/logo-icon.png"
+          title="Le Fil des Chapitres"
+          webtoon-id="demo-image"
+        />
+        <AppCover class="cover-demo" title="Tower of God" webtoon-id="demo-1" />
+        <AppCover class="cover-demo" title="Lore Olympus" webtoon-id="demo-2" />
+        <AppCover
+          class="cover-demo"
+          src="data:image/png;base64,invalide"
+          title="Image cassée"
+          webtoon-id="demo-3"
+        />
+      </div>
+    </section>
+
+    <section>
+      <h2>Carte webtoon</h2>
+      <p class="text-secondary">
+        Webtoon hors liste, en cours (bouton +1), terminé, total inconnu, ouverture par événement.
+      </p>
+      <div class="wt-grid">
+        <WebtoonCard :item="demoWebtoon" />
+        <WebtoonCard :item="demoReading" @increment="demoReading.chaptersRead += 1" />
+        <WebtoonCard :item="demoCompleted" />
+        <WebtoonCard
+          :item="demoNoTotal"
+          open-mode="event"
+          @increment="demoNoTotal.chaptersRead += 1"
+          @open="toast.success('Événement open émis.')"
+        />
       </div>
     </section>
 
@@ -311,12 +386,8 @@ code {
   padding-bottom: var(--space-2);
 }
 
-.tag {
-  font-family: var(--font-body);
-  font-style: italic;
-  font-size: var(--fs-tag);
-  padding: 3px 11px;
-  border-radius: var(--radius-pill);
+.subtitle {
+  margin-top: var(--space-4);
 }
 
 .row {
