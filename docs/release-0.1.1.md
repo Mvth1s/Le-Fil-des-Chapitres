@@ -13,8 +13,10 @@ repart d'ici.
 
 ## Avancement par lot
 
-- [ ] Lot 1 : `chore/ui-kit-sources` (bundle décompressé, prénom retiré, bundle supprimé)
-- [ ] Lot 2 : `style/design-tokens-ui-kit`
+- [x] Lot 1 : `chore/ui-kit-sources` (PR #39 ; bundle décompressé, prénom retiré, bundle supprimé)
+- [x] Lot 2 : `style/design-tokens-ui-kit` (tokens, V5, couleurs statut/genre, polices auto-hébergées).
+  Polices : TTF variables officiels de `google/fonts` (branche `main`, dossiers `ofl/dancingscript`
+  et `ofl/playfairdisplay`, 2026-11-11), convertis sans perte avec `woff2_compress`, non découpés.
 - [ ] Lot 3 : composants et pages (7 sujets)
 - [ ] Lot 4 : `chore/dev-demo-data`
 - [ ] Lot 5 : contrôle visuel et release v0.1.1
