@@ -283,7 +283,7 @@ function setView(next: 'grid' | 'list') {
         class="table-wrapper"
         tabindex="0"
         role="region"
-        aria-label="Catalogue en liste"
+        aria-label="Liste des webtoons"
       >
         <table class="table">
           <thead>
@@ -322,6 +322,8 @@ function setView(next: 'grid' | 'list') {
                   v-if="statusByWebtoonId.get(webtoon.id)"
                   :status="statusByWebtoonId.get(webtoon.id)!"
                 />
+                <!-- Liste non chargee : statut inconnu, pas "hors liste". -->
+                <span v-else-if="listError" class="table__none">-</span>
                 <span v-else class="table__none">Pas dans ma liste</span>
               </td>
             </tr>
@@ -497,6 +499,12 @@ function setView(next: 'grid' | 'list') {
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+}
+
+/* Zone defilable au clavier (tabindex) : contour de focus explicite. */
+.table-wrapper:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .table {
