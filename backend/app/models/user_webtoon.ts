@@ -73,7 +73,10 @@ export default class UserWebtoon extends BaseModel {
    * - le statut passe automatiquement a "completed" quand chapters_read
    *   atteint chapters_total (si ce dernier est defini) ;
    * - started_at/finished_at se renseignent automatiquement au passage dans
-   *   le statut correspondant, si pas deja fournis explicitement.
+   *   le statut correspondant, si pas deja fournis explicitement. Seul un
+   *   changement de statut dans cette sauvegarde les declenche : une date
+   *   effacee volontairement (null) sur une entree deja "completed" ou
+   *   "reading" reste effacee.
    */
   @beforeSave()
   static async applyProgressRules(userWebtoon: UserWebtoon) {
@@ -91,7 +94,7 @@ export default class UserWebtoon extends BaseModel {
     if (userWebtoon.$dirty.status === 'reading' && !userWebtoon.startedAt) {
       userWebtoon.startedAt = DateTime.now()
     }
-    if (userWebtoon.status === 'completed' && !userWebtoon.finishedAt) {
+    if (userWebtoon.$dirty.status === 'completed' && !userWebtoon.finishedAt) {
       userWebtoon.finishedAt = DateTime.now()
     }
   }

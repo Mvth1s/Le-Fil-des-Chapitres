@@ -48,6 +48,7 @@ const statusOptions = [
       <div class="row">
         <AppInput v-model="inputValue" label="Titre du webtoon" placeholder="Ex : Solo Leveling" />
         <AppInput label="Champ en erreur" error="Ce champ est obligatoire." />
+        <AppInput label="Note (0 a 10)" type="number" :min="0" :max="10" :step="0.5" />
         <AppSelect v-model="selectValue" label="Statut" :options="statusOptions" />
       </div>
     </section>

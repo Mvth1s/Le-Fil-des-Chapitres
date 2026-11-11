@@ -2,7 +2,6 @@
 import type { UserWebtoon, UserWebtoonStatus } from '~/types/user-webtoon'
 
 const apiBase = useApiBase()
-const router = useRouter()
 const toast = useToast()
 const {
   data: entries,
@@ -50,24 +49,25 @@ const filteredEntries = computed(() => {
   })
 })
 
-function goToDetail(webtoonId: string) {
-  void router.push(`/catalogue/${webtoonId}`)
-}
+// Ids des entrees ayant une requete en vol : une seule requete a la fois par
+// entree (+1, saisie directe, statut, edition), sans bloquer les autres cartes.
+const pendingIds = reactive(new Set<string>())
 
-const updatingId = ref<string | null>(null)
-
-async function handleStatusChange(entry: UserWebtoon, newStatus: string) {
-  updatingId.value = entry.id
+async function handleStatusChange(entry: UserWebtoon, newStatus: UserWebtoonStatus) {
+  if (pendingIds.has(entry.id)) return
+  pendingIds.add(entry.id)
   try {
-    await $fetch(`${apiBase}/user/list/${entry.id}`, {
+    const updated = await $fetch<UserWebtoon>(`${apiBase}/user/list/${entry.id}`, {
       method: 'PUT',
       body: { status: newStatus },
     })
-    await refresh()
+    // Patch local plutot que refresh() : refresh repasse pending a true, ce
+    // qui demonterait toute la liste et ferait perdre le focus.
+    patchEntry(entry.id, updated)
   } catch {
-    toast.error('Le changement de statut a echoue. Reessaie dans un instant.')
+    toast.error('Le changement de statut a échoué. Réessaie dans un instant.')
   } finally {
-    updatingId.value = null
+    pendingIds.delete(entry.id)
   }
 }
 
@@ -76,28 +76,134 @@ function canAddChapter(entry: UserWebtoon) {
   return total === null || entry.chaptersRead < total
 }
 
-async function handleAddChapter(entry: UserWebtoon) {
-  updatingId.value = entry.id
+// data de useFetch est un shallowRef (Nuxt 4) : modifier une entree en place
+// ne declencherait pas de rendu, on remplace donc le tableau. webtoon est
+// toujours conserve : les reponses de PUT/PATCH ne prechargent pas ses genres
+// (a la difference de GET /user/list).
+function patchEntry(id: string, patch: Partial<UserWebtoon>) {
+  entries.value = (entries.value ?? []).map((entry) =>
+    entry.id === id ? { ...entry, ...patch, webtoon: entry.webtoon } : entry
+  )
+}
+
+// Mise a jour optimiste (US-06) : la carte affiche la nouvelle valeur tout de
+// suite, puis prend la reponse serveur (le statut peut passer a "completed")
+// ou revient a l'ancienne valeur en cas d'echec.
+async function updateProgress(entry: UserWebtoon, chaptersRead: number) {
+  if (pendingIds.has(entry.id)) return
+  pendingIds.add(entry.id)
+  const previous = entry.chaptersRead
+  patchEntry(entry.id, { chaptersRead })
   try {
-    await $fetch(`${apiBase}/user/list/${entry.id}/progress`, {
+    const updated = await $fetch<UserWebtoon>(`${apiBase}/user/list/${entry.id}/progress`, {
       method: 'PATCH',
-      body: { chaptersRead: entry.chaptersRead + 1 },
+      body: { chaptersRead },
     })
-    // refresh() plutot qu'un patch local de l'entree : la reponse de PATCH
-    // ne precharge pas webtoon.genres (a la difference de GET /user/list),
-    // l'utiliser directement casserait l'affichage des genres sur cette carte.
-    await refresh()
-  } catch {
-    toast.error("La mise a jour de la progression a echoue. Reessaie dans un instant.")
+    patchEntry(entry.id, updated)
+  } catch (error) {
+    // Retour arriere seulement si l'entree n'a pas change entre-temps : toute
+    // reponse serveur appliquee modifie updatedAt (et une valeur differente
+    // de chaptersRead signale une autre modification locale).
+    const current = entries.value?.find((item) => item.id === entry.id)
+    if (current && current.updatedAt === entry.updatedAt && current.chaptersRead === chaptersRead) {
+      patchEntry(entry.id, { chaptersRead: previous })
+    }
+    toast.error(
+      extractBusinessError(error) ??
+        Object.values(extractValidationErrors(error))[0] ??
+        'La mise à jour de la progression a échoué. Réessaie dans un instant.'
+    )
   } finally {
-    updatingId.value = null
+    pendingIds.delete(entry.id)
   }
+}
+
+// Edition d'une entree (US-07)
+const editOpen = ref(false)
+const editTarget = ref<UserWebtoon | null>(null)
+const editErrors = ref<Record<string, string>>({})
+const editGlobalError = ref('')
+const saving = ref(false)
+
+function openEdit(entry: UserWebtoon) {
+  editTarget.value = entry
+  editErrors.value = {}
+  editGlobalError.value = ''
+  editOpen.value = true
+}
+
+async function handleEditSubmit(payload: ReadingEntryPayload) {
+  if (!editTarget.value || saving.value || pendingIds.has(editTarget.value.id)) return
+  const id = editTarget.value.id
+  pendingIds.add(id)
+  saving.value = true
+  editErrors.value = {}
+  editGlobalError.value = ''
+  try {
+    const updated = await $fetch<UserWebtoon>(`${apiBase}/user/list/${id}`, {
+      method: 'PUT',
+      body: payload,
+    })
+    patchEntry(updated.id, updated)
+    editOpen.value = false
+    toast.success('Ta lecture a été mise à jour.')
+  } catch (error) {
+    // Erreur metier sans champ (chapitres > total) en message global, erreurs
+    // VineJS sous leur champ, tout le reste en message generique.
+    const businessError = extractBusinessError(error)
+    if (businessError) {
+      editGlobalError.value = businessError
+    } else {
+      editErrors.value = extractValidationErrors(error)
+      if (Object.keys(editErrors.value).length === 0) {
+        editGlobalError.value = "L'enregistrement a échoué. Réessaie dans un instant."
+      }
+    }
+  } finally {
+    saving.value = false
+    pendingIds.delete(id)
+  }
+}
+
+// Retrait de la liste (US-08)
+const removeOpen = ref(false)
+const removeTarget = ref<UserWebtoon | null>(null)
+const removing = ref(false)
+const headingRef = ref<HTMLElement | null>(null)
+
+function openRemove(entry: UserWebtoon) {
+  removeTarget.value = entry
+  removeOpen.value = true
+}
+
+async function handleRemove() {
+  if (!removeTarget.value || removing.value) return
+  removing.value = true
+  const id = removeTarget.value.id
+  try {
+    await $fetch(`${apiBase}/user/list/${id}`, { method: 'DELETE' })
+    entries.value = (entries.value ?? []).filter((entry) => entry.id !== id)
+    removeOpen.value = false
+    toast.success('Webtoon retiré de ta liste.')
+    // Le bouton declencheur a disparu avec la carte : on place le focus sur
+    // le titre de la page pour ne pas le perdre.
+    await nextTick()
+    headingRef.value?.focus()
+  } catch {
+    toast.error('Le retrait a échoué. Réessaie dans un instant.')
+  } finally {
+    removing.value = false
+  }
+}
+
+function formatRating(rating: number) {
+  return String(rating).replace('.', ',')
 }
 </script>
 
 <template>
   <main class="page">
-    <h1>Ma liste</h1>
+    <h1 ref="headingRef" tabindex="-1">Ma liste</h1>
 
     <p v-if="pending" class="text-secondary">Chargement de la liste...</p>
 
@@ -126,13 +232,15 @@ async function handleAddChapter(entry: UserWebtoon) {
           v-for="entry in filteredEntries"
           :key="entry.id"
           class="entry-card"
-          role="link"
-          tabindex="0"
-          @click="goToDetail(entry.webtoonId)"
-          @keydown.enter="goToDetail(entry.webtoonId)"
         >
           <template #header>
-            <h3>{{ entry.webtoon.title }}</h3>
+            <!-- Le lien du titre s'etend a toute la carte (::after, voir le
+                 style) ; les controles sont places au-dessus. -->
+            <h3>
+              <NuxtLink :to="`/catalogue/${entry.webtoonId}`" class="entry-link">
+                {{ entry.webtoon.title }}
+              </NuxtLink>
+            </h3>
           </template>
 
           <p class="text-secondary">{{ entry.webtoon.author }}</p>
@@ -147,12 +255,41 @@ async function handleAddChapter(entry: UserWebtoon) {
             <AppButton
               variant="outline"
               size="sm"
-              :disabled="updatingId === entry.id || !canAddChapter(entry)"
-              @click.stop="handleAddChapter(entry)"
+              :disabled="!canAddChapter(entry)"
+              :aria-disabled="pendingIds.has(entry.id)"
+              @click="updateProgress(entry, entry.chaptersRead + 1)"
             >
-              {{ updatingId === entry.id ? '...' : '+1 chapitre' }}
+              +1 chapitre
             </AppButton>
           </div>
+
+          <ReadingProgressInput
+            :chapters-read="entry.chaptersRead"
+            :chapters-total="entry.webtoon.chaptersTotal"
+            :disabled="pendingIds.has(entry.id)"
+            @submit="(value) => updateProgress(entry, value)"
+          />
+
+          <dl
+            v-if="entry.rating !== null || entry.startedAt || entry.finishedAt"
+            class="details"
+          >
+            <template v-if="entry.rating !== null">
+              <dt>Note</dt>
+              <dd>{{ formatRating(entry.rating) }} / 10</dd>
+            </template>
+            <template v-if="entry.startedAt">
+              <dt>Début</dt>
+              <dd>{{ formatDate(entry.startedAt) }}</dd>
+            </template>
+            <template v-if="entry.finishedAt">
+              <dt>Fin</dt>
+              <dd>{{ formatDate(entry.finishedAt) }}</dd>
+            </template>
+          </dl>
+          <!-- Tronque visuellement (CSS line-clamp) : le texte complet reste
+               dans le DOM, lu en entier par les lecteurs d'ecran. -->
+          <p v-if="entry.comment" class="comment">{{ entry.comment }}</p>
 
           <div v-if="entry.webtoon.genres.length > 0" class="genres">
             <AppBadge v-for="genre in entry.webtoon.genres" :key="genre.id">
@@ -160,21 +297,73 @@ async function handleAddChapter(entry: UserWebtoon) {
             </AppBadge>
           </div>
 
-          <!-- @click.stop : un <select> est du contenu interactif, il ne peut
-               pas etre imbrique dans un lien (HTML invalide, comportement
-               clavier/lecteur d'ecran impredictible). La carte entiere navigue
-               au clic, sauf ici ou le select garde son propre comportement. -->
+          <!-- disabled natif (pas aria-disabled) : un <select> aria-disabled
+               changerait quand meme de valeur a l'ecran. -->
           <AppSelect
             label="Statut"
             :model-value="entry.status"
             :options="statusOptions"
-            :disabled="updatingId === entry.id"
-            @click.stop
+            :disabled="pendingIds.has(entry.id)"
             @update:model-value="(value) => handleStatusChange(entry, value as UserWebtoonStatus)"
           />
+
+          <div class="actions">
+            <AppButton
+              variant="outline"
+              size="sm"
+              :aria-label="`Modifier ma lecture de ${entry.webtoon.title}`"
+              @click="openEdit(entry)"
+            >
+              Modifier
+            </AppButton>
+            <AppButton
+              variant="ghost"
+              size="sm"
+              :aria-label="`Retirer ${entry.webtoon.title} de ma liste`"
+              @click="openRemove(entry)"
+            >
+              Retirer
+            </AppButton>
+          </div>
         </AppCard>
       </div>
     </template>
+
+    <AppModal v-model:open="editOpen" :persistent="saving">
+      <template #title>Modifier ma lecture</template>
+      <p v-if="editTarget" class="text-secondary modal-subtitle">{{ editTarget.webtoon.title }}</p>
+      <ReadingEntryForm
+        v-if="editTarget"
+        :key="editTarget.id"
+        :entry="editTarget"
+        :errors="editErrors"
+        :global-error="editGlobalError"
+        :submitting="saving"
+        @submit="handleEditSubmit"
+        @cancel="editOpen = false"
+      />
+    </AppModal>
+
+    <AppModal v-model:open="removeOpen" :persistent="removing">
+      <template #title>Retirer ce webtoon de ta liste ?</template>
+      <p>
+        Ta progression, ta note et ton commentaire sur {{ removeTarget?.webtoon.title }} seront
+        perdus. Le webtoon reste dans le catalogue.
+      </p>
+      <template #actions>
+        <AppButton
+          variant="outline"
+          size="sm"
+          :aria-disabled="removing"
+          @click="!removing && (removeOpen = false)"
+        >
+          Annuler
+        </AppButton>
+        <AppButton variant="secondary" size="sm" :aria-disabled="removing" @click="handleRemove">
+          {{ removing ? 'Retrait...' : 'Retirer' }}
+        </AppButton>
+      </template>
+    </AppModal>
   </main>
 </template>
 
@@ -206,9 +395,9 @@ async function handleAddChapter(entry: UserWebtoon) {
 }
 
 .entry-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  cursor: pointer;
   transition:
     transform 0.15s ease,
     border-color 0.15s ease;
@@ -219,7 +408,24 @@ async function handleAddChapter(entry: UserWebtoon) {
   transform: scale(1.02);
 }
 
-.entry-card:focus-visible {
+.entry-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Rend toute la carte cliquable sans imbriquer de controles dans un lien. */
+.entry-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.entry-link:focus-visible {
+  outline: none;
+}
+
+.entry-card:has(.entry-link:focus-visible) {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
@@ -231,21 +437,13 @@ async function handleAddChapter(entry: UserWebtoon) {
   flex: 1;
 }
 
-/* Le select de statut et le bouton +1 chapitre restent des commandes
-   independantes de la navigation de la carte (voir @click.stop dans le
-   template) : curseur normal, pas de confusion avec le clic-pour-naviguer
-   du reste de la carte. */
+/* Les controles passent au-dessus du ::after du lien de titre : ils gardent
+   leur propre comportement au clic au lieu d'ouvrir la fiche. */
 .entry-card :deep(.app-select),
+.entry-card :deep(.app-input),
 .entry-card :deep(.app-button) {
-  cursor: auto;
-}
-
-/* Annule le curseur "interdit" par defaut de AppButton:disabled : le
-   bouton est desactive tres brievement pendant la requete (voir
-   updatingId), l'opacite reduite suffit comme indicateur, la croix rouge
-   du curseur clignotant le temps de l'appel est plus perturbante qu'utile. */
-.entry-card :deep(.app-button:disabled) {
-  cursor: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .progress {
@@ -258,6 +456,49 @@ async function handleAddChapter(entry: UserWebtoon) {
 
 .progress p {
   margin: 0;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--spacing-xs) var(--spacing-sm);
+  margin: 0;
+  font-size: 14px;
+}
+
+.details dt {
+  font-weight: 600;
+}
+
+.details dd {
+  margin: 0;
+}
+
+.comment {
+  margin: 0;
+  font-size: 14px;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: auto;
+}
+
+.modal-subtitle {
+  margin: 0 0 var(--spacing-md);
+}
+
+h1:focus {
+  outline: none;
 }
 
 .genres {

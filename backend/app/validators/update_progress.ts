@@ -7,6 +7,6 @@ import vine from '@vinejs/vine'
  */
 export const updateProgressValidator = vine.compile(
   vine.object({
-    chaptersRead: vine.number().min(0),
+    chaptersRead: vine.number().withoutDecimals().min(0),
   })
 )
