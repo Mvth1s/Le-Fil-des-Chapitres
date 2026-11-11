@@ -300,6 +300,7 @@ function formatRating(rating: number) {
               <AppCover
                 :src="entry.webtoon.coverUrl"
                 :title="entry.webtoon.title"
+                :webtoon-id="entry.webtoon.id"
                 class="entry-cover"
               />
               <h3>

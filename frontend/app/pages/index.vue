@@ -24,6 +24,23 @@ const { data: entries } = await useFetch<UserWebtoon[]>(`${apiBase}/user/list`, 
 const readingEntries = computed(() =>
   (entries.value ?? []).filter((entry) => entry.status === 'reading').slice(0, 3)
 )
+
+const { increment, pendingIds } = useChapterIncrement(entries)
+
+// Les tuiles de stats sont patchees localement plutot que refetchees :
+// refresh() repasserait pending a true et masquerait le tableau de bord.
+async function handleIncrement(entry: UserWebtoon) {
+  const updated = await increment(entry)
+  if (!updated || !stats.value) return
+  const byStatus = { ...stats.value.byStatus }
+  byStatus[entry.status] -= 1
+  byStatus[updated.status] += 1
+  stats.value = {
+    ...stats.value,
+    totalChaptersRead: stats.value.totalChaptersRead + updated.chaptersRead - entry.chaptersRead,
+    byStatus,
+  }
+}
 </script>
 
 <template>
@@ -69,26 +86,14 @@ const readingEntries = computed(() =>
 
     <section v-if="readingEntries.length > 0" class="section">
       <h2>Reprendre la lecture</h2>
-      <div class="grid">
-        <NuxtLink
+      <div class="wt-grid grid">
+        <WebtoonCard
           v-for="entry in readingEntries"
           :key="entry.id"
-          :to="`/catalogue/${entry.webtoonId}`"
-          class="card-link"
-        >
-          <AppCard>
-            <template #header>
-              <h3>{{ entry.webtoon.title }}</h3>
-            </template>
-            <p class="text-secondary">{{ entry.webtoon.author }}</p>
-            <p class="text-secondary">
-              <template v-if="entry.webtoon.chaptersTotal">
-                {{ entry.chaptersRead }} / {{ entry.webtoon.chaptersTotal }} chapitres
-              </template>
-              <template v-else>{{ entry.chaptersRead }} chapitres lus</template>
-            </p>
-          </AppCard>
-        </NuxtLink>
+          :item="entry"
+          :busy="pendingIds.has(entry.id)"
+          @increment="handleIncrement(entry)"
+        />
       </div>
     </section>
   </main>
@@ -132,38 +137,7 @@ const readingEntries = computed(() =>
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--spacing-lg);
   margin-top: var(--spacing-md);
-}
-
-/* Meme pattern que pages/catalogue/index.vue : carte entiere cliquable,
-   agrandissement + contour au survol. */
-.card-link {
-  display: flex;
-  height: 100%;
-  color: inherit;
-  text-decoration: none;
-}
-
-.card-link :deep(.app-card) {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.card-link:hover :deep(.app-card) {
-  border-color: var(--color-primary);
-  transform: scale(1.02);
-}
-
-.card-link:focus-visible :deep(.app-card) {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
 }
 
 .error-box {

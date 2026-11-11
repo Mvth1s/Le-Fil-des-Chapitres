@@ -13,3 +13,14 @@ export const COVER_GRADIENTS = {
 } as const
 
 export type CoverGradientKey = keyof typeof COVER_GRADIENTS
+
+const GRADIENT_LIST: string[] = Object.values(COVER_GRADIENTS)
+
+// Choix deterministe du degrade de la couverture generee (V4) : meme id, meme
+// degrade, d'un rendu a l'autre (SSR comme client). Hash 31 classique sur les
+// points de code, ramene en entier non signe (>>> 0) pour un modulo positif.
+export function coverGradientFor(id: string): string {
+  let hash = 0
+  for (const char of id) hash = (hash * 31 + (char.codePointAt(0) ?? 0)) >>> 0
+  return GRADIENT_LIST[hash % GRADIENT_LIST.length] ?? COVER_GRADIENTS.sage
+}

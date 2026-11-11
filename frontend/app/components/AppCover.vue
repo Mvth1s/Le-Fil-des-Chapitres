@@ -1,13 +1,15 @@
 <script setup lang="ts">
 /*
- * Couverture d'un webtoon au format 2:3 (ratio fixe : pas de saut de mise en
- * page pendant le chargement). La largeur vient du parent. Repli local aux
- * couleurs de la charte (initiales du titre, aucune requete externe) si
- * l'URL est absente ou si l'image ne se charge pas.
+ * Couverture d'un webtoon au format 3:4 (ratio fixe : pas de saut de mise en
+ * page pendant le chargement). La largeur vient du parent. Si l'URL est
+ * absente ou si l'image ne se charge pas : couverture generee (decision V4),
+ * degrade choisi par hash de l'id du webtoon + pile de livres du UI kit,
+ * sans aucune requete externe.
  */
 const props = defineProps<{
   src?: string | null
   title: string
+  webtoonId: string
 }>()
 
 const failed = ref(false)
@@ -30,44 +32,60 @@ onMounted(() => {
   if (img.value?.complete && img.value.naturalWidth === 0) failed.value = true
 })
 
-const initials = computed(() =>
-  props.title
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => (Array.from(word)[0] ?? '').toUpperCase())
-    .join('')
-)
+const gradient = computed(() => coverGradientFor(props.webtoonId))
+
+// Pile de livres du UI kit (atoms.jsx, Cover) : largeurs rapportees a une
+// couverture de 266px pour suivre la taille de la couverture.
+const BOOKS = [
+  { width: '19%', opacity: 0.85 },
+  { width: '24%', opacity: 0.75 },
+  { width: '21%', opacity: 0.65 },
+  { width: '26%', opacity: 0.55 },
+]
 </script>
 
 <template>
-  <!-- Decoratif : le titre est toujours affiche a cote (et annonce par le lien de la carte). -->
   <div class="app-cover">
     <img
       v-if="src && !failed"
       ref="img"
       :src="src"
-      alt=""
-      width="200"
-      height="300"
+      :alt="`Couverture de ${title}`"
+      width="300"
+      height="400"
       loading="lazy"
       decoding="async"
       referrerpolicy="no-referrer"
       class="app-cover__img"
       @error="failed = true"
     >
-    <div v-else class="app-cover__fallback" aria-hidden="true">{{ initials }}</div>
+    <!-- Decoratif : aucune information, le titre est affiche a cote. -->
+    <div
+      v-else
+      class="app-cover__generated"
+      :style="{ background: gradient }"
+      aria-hidden="true"
+    >
+      <span class="app-cover__books">
+        <span
+          v-for="(book, index) in BOOKS"
+          :key="index"
+          class="app-cover__book"
+          :style="{ width: book.width, opacity: book.opacity }"
+        />
+      </span>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .app-cover {
   width: 100%;
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 3 / 4;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background-color: var(--color-beige);
-  /* Taille des initiales relative a la largeur de la couverture (cqi). */
+  background-color: var(--color-bg-sunken);
+  /* Taille de la pile de livres relative a la largeur (cqi). */
   container-type: inline-size;
 }
 
@@ -78,18 +96,26 @@ const initials = computed(() =>
   object-fit: cover;
 }
 
-/* --color-text sur --color-beige : 6.5:1 (AA). Le filet dore rappelle le
-   "fil" du logo, purement decoratif. */
-.app-cover__fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.app-cover__generated {
+  display: grid;
+  place-items: center;
   width: 100%;
   height: 100%;
-  border-bottom: 4px solid var(--color-accent);
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(24px, 30cqi, 64px);
-  color: var(--color-text);
+}
+
+.app-cover__books {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1cqi;
+  width: 100%;
+  opacity: 0.55;
+}
+
+.app-cover__book {
+  display: block;
+  height: 4.5cqi;
+  border-radius: 3px;
+  background-color: var(--color-surface);
 }
 </style>

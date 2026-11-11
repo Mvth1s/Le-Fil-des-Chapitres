@@ -121,7 +121,12 @@ async function handleAddToList() {
         </div>
       </div>
       <div class="article-body">
-        <AppCover :src="webtoon.coverUrl" :title="webtoon.title" class="article-cover" />
+        <AppCover
+          :src="webtoon.coverUrl"
+          :title="webtoon.title"
+          :webtoon-id="webtoon.id"
+          class="article-cover"
+        />
         <div class="article-info">
           <p class="text-secondary">{{ webtoon.author }}</p>
 
