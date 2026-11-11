@@ -38,4 +38,15 @@ repart d'ici.
 
 ## Écarts au UI kit
 
-(Rempli au lot 5.)
+- Conteneur : 1200 px max avec marges de 28 px (1144 px utiles), comme la capture du UI kit,
+  au lieu des "environ 1000 px" du prompt (V1 : le UI kit fait foi pour la mise en page).
+- Lien actif du header : texte en encre (le doré du UI kit n'atteint pas AA sur le crème), V5.
+- Logo du header : pile de livres seule (`logo-icon.png`), le logo carré du UI kit contient un
+  texte illisible à 38 px.
+
+(Complété au lot 5.)
+
+## Suggestions de relecture non traitées
+
+- Catalogue : course de quelques ms entre `router.replace` et le watch de `route.query.q`
+  pouvant perdre une frappe (lot 3.2).
