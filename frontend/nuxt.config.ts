@@ -9,6 +9,13 @@ export default defineNuxtConfig({
     ['@nuxt/eslint', { config: { typescript: { tsconfigPath: './tsconfig.json' } } }],
   ],
   css: ['~/assets/css/main.css'],
+  typescript: {
+    // Rattache les tests et vitest.config.ts aux tsconfig generes par Nuxt
+    // (chemins relatifs a .nuxt/) : alias '~', auto-imports et typed linting
+    // ESLint sans passer par allowDefaultProject (plafonne a 8 fichiers).
+    appTsConfig: { include: ['../tests/**/*'] },
+    nodeTsConfig: { include: ['../vitest.config.ts'] },
+  },
   runtimeConfig: {
     // Prive : uniquement accessible cote serveur (SSR), jamais expose au
     // navigateur. Le rendu SSR tourne DANS le conteneur frontend, qui doit
