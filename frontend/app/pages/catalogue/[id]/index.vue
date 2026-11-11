@@ -60,6 +60,15 @@ const statusOptions = USER_WEBTOON_STATUSES.map((value) => ({
 }))
 const newStatus = ref<UserWebtoonStatus>('plan_to_read')
 const adding = ref(false)
+const listLink = ref<{ $el: HTMLElement } | null>(null)
+
+// Apres l'ajout, le formulaire disparait : on deplace le focus sur le lien
+// qui le remplace pour ne pas le perdre (clavier, lecteur d'ecran).
+async function refreshAndFocusLink() {
+  await refreshList()
+  await nextTick()
+  listLink.value?.$el.focus()
+}
 
 async function handleAddToList() {
   if (adding.value) return
@@ -69,15 +78,15 @@ async function handleAddToList() {
       method: 'POST',
       body: { webtoonId, status: newStatus.value },
     })
-    toast.success('Webtoon ajoute a ta liste de lecture.')
-    await refreshList()
+    toast.success('Webtoon ajouté à ta liste de lecture.')
+    await refreshAndFocusLink()
   } catch (error) {
     if (isAlreadyInListError(error)) {
-      toast.error('Ce webtoon est deja dans ta liste de lecture.')
-      await refreshList()
+      toast.error('Ce webtoon est déjà dans ta liste de lecture.')
+      await refreshAndFocusLink()
     } else {
       const firstMessage = Object.values(extractValidationErrors(error))[0]
-      toast.error(firstMessage ?? "L'ajout a ta liste a echoue. Reessaie dans un instant.")
+      toast.error(firstMessage ?? "L'ajout à ta liste a échoué. Réessaie dans un instant.")
     }
   } finally {
     adding.value = false
@@ -128,14 +137,16 @@ async function handleAddToList() {
 
       <section class="my-list" aria-labelledby="my-list-title">
         <h2 id="my-list-title">Ma liste</h2>
-        <p v-if="listPending" class="text-secondary">Chargement...</p>
-        <div v-else-if="listError" class="error-box">
-          <p>Impossible de verifier ta liste de lecture pour le moment.</p>
+        <p v-if="listPending && !listEntries" class="text-secondary" role="status">
+          Chargement...
+        </p>
+        <div v-else-if="listError" class="error-box" role="alert">
+          <p>Impossible de vérifier ta liste de lecture pour le moment.</p>
           <AppButton variant="outline" size="sm" @click="refreshList()">Réessayer</AppButton>
         </div>
         <div v-else-if="listEntry" class="my-list__row">
           <AppBadge :variant="listEntry.status">{{ STATUS_LABELS[listEntry.status] }}</AppBadge>
-          <NuxtLink to="/liste">Voir ma liste</NuxtLink>
+          <NuxtLink ref="listLink" to="/liste">Voir ma liste</NuxtLink>
         </div>
         <form v-else class="my-list__row" @submit.prevent="handleAddToList">
           <AppSelect v-model="newStatus" label="Statut de lecture" :options="statusOptions" />
