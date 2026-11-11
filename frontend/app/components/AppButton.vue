@@ -94,13 +94,20 @@ withDefaults(
   color: var(--color-text);
 }
 
+/* --color-primary en texte n'offre que 2.8:1 sur --color-bg (3.0:1 sur
+   --color-surface), sous les 4.5:1 requis a 14px : le texte reste en
+   --color-text (10.6:1) et le vert passe dans le soulignement, decoratif. */
 .is-ghost {
   background-color: transparent;
-  color: var(--color-primary);
+  color: var(--color-text);
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
 }
 
-.is-ghost:not(:disabled):hover {
-  text-decoration: underline;
+.is-ghost:not(:disabled):not([aria-disabled='true']):hover {
+  text-decoration-color: var(--color-text);
   opacity: 1;
 }
 </style>

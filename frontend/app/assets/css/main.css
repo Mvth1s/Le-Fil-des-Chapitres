@@ -65,15 +65,19 @@ h3 {
   margin: 0 0 var(--spacing-sm);
 }
 
+/* Sans cette regle, les liens gardent le bleu/violet du navigateur, hors
+   charte. Le soulignement par defaut les distingue du texte. */
+a {
+  color: var(--color-text);
+}
+
 /*
- * --color-text-muted n'a que ~3.3:1 de contraste sur --color-bg : conforme
- * WCAG AA uniquement pour du texte large (>= 18px), pas pour du texte
- * courant (voir resume de l'etape 5). Deux classes distinctes pour ne pas
- * s'en servir par erreur sur du petit texte :
- * - .text-secondary : petit texte (14px) parfaitement lisible, couleur
- *   pleine --color-text.
- * - .text-muted : reserve aux textes >= 18px (sous-titres, accroches),
- *   seul contexte ou --color-text-muted reste conforme.
+ * --color-text-muted n'a que 3.26:1 de contraste sur --color-bg : conforme
+ * WCAG AA seulement en "grand texte" (>= 24px, ou >= 18.66px en gras), pas
+ * a 18px en graisse normale. Il n'est donc plus utilise pour du texte.
+ * - .text-secondary : petit texte (14px), couleur pleine --color-text.
+ * - .text-muted : accroche (18px), distinguee par l'italique et non par la
+ *   couleur (--color-text, 10.6:1).
  */
 small,
 .text-secondary {
@@ -83,5 +87,6 @@ small,
 
 .text-muted {
   font-size: 18px;
-  color: var(--color-text-muted);
+  font-style: italic;
+  color: var(--color-text);
 }

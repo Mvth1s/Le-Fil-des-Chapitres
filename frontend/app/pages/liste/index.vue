@@ -296,11 +296,18 @@ function formatRating(rating: number) {
           <template #header>
             <!-- Le lien du titre s'etend a toute la carte (::after, voir le
                  style) ; les controles sont places au-dessus. -->
-            <h3>
-              <NuxtLink :to="`/catalogue/${entry.webtoonId}`" class="entry-link">
-                {{ entry.webtoon.title }}
-              </NuxtLink>
-            </h3>
+            <div class="entry-head">
+              <AppCover
+                :src="entry.webtoon.coverUrl"
+                :title="entry.webtoon.title"
+                class="entry-cover"
+              />
+              <h3>
+                <NuxtLink :to="`/catalogue/${entry.webtoonId}`" class="entry-link">
+                  {{ entry.webtoon.title }}
+                </NuxtLink>
+              </h3>
+            </div>
           </template>
 
           <p class="text-secondary">{{ entry.webtoon.author }}</p>
@@ -478,6 +485,23 @@ function formatRating(rating: number) {
 .entry-card:hover {
   border-color: var(--color-primary);
   transform: scale(1.02);
+}
+
+.entry-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+/* Vignette : la carte porte deja beaucoup de controles, une couverture
+   pleine largeur l'allongerait trop. */
+.entry-cover {
+  flex: 0 0 72px;
+}
+
+.entry-head h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .entry-link {

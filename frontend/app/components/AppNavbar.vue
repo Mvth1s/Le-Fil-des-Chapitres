@@ -54,7 +54,10 @@ const links = [
 
 .app-navbar__links {
   display: flex;
-  gap: var(--spacing-lg);
+  /* A 375px les quatre liens ne tiennent pas sur une ligne : ils passent a
+     la ligne entre eux plutot qu'au milieu d'un libelle ("Ma liste"). */
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-lg);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -65,11 +68,16 @@ const links = [
   font-size: 16px;
   color: var(--color-text);
   text-decoration: none;
+  white-space: nowrap;
 }
 
+/* Texte en --color-text : --color-primary n'a que 3.0:1 sur --color-surface,
+   insuffisant a 16px. Le vert reste dans le soulignement. */
 .app-navbar__link:hover,
 .app-navbar__link.router-link-active {
-  color: var(--color-primary);
   text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
 }
 </style>

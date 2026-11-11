@@ -198,6 +198,7 @@ function setView(next: 'grid' | 'list') {
         >
           <AppCard>
             <template #header>
+              <AppCover :src="webtoon.coverUrl" :title="webtoon.title" class="card-cover" />
               <h3>{{ webtoon.title }}</h3>
             </template>
 
@@ -300,6 +301,10 @@ function setView(next: 'grid' | 'list') {
 .card-link:focus-visible :deep(.app-card) {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+.card-cover {
+  margin-bottom: var(--spacing-md);
 }
 
 .genres {
