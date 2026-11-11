@@ -1,9 +1,34 @@
 /*
  * Charte graphique - Le Fil des Chapitres (voir CLAUDE.md section 8).
- * Ne pas introduire de couleur ou de police hors de cette liste sans
- * validation explicite.
+ * Ne pas introduire de couleur ou de police hors de cette liste et des tokens
+ * du UI kit (refonte v0.1.1) sans validation explicite.
  */
+/* Polices auto-hebergees (decision V6) : plus d'appel a Google Fonts. */
+@font-face {
+  font-family: 'Dancing Script';
+  src: url('/fonts/dancing-script/DancingScript-Variable.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display/PlayfairDisplay-Variable.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display/PlayfairDisplay-Italic-Variable.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Tokens repris du UI kit (Maquette/ui-kit/tokens-and-styles.css). */
 :root {
+  /* Teintes de la charte (CLAUDE.md section 8) */
   --color-primary: #8b9b6a;
   --color-blue: #8faec5;
   --color-rose: #c89ba5;
@@ -13,19 +38,83 @@
   --color-text-muted: #8b8b7a;
   --color-bg: #faf8f4;
 
+  /* Nuances plus sombres (survol, appui) */
+  --color-primary-shade: #7a8a59;
+  --color-blue-shade: #7e9db4;
+  --color-rose-shade: #b78a94;
+  --color-beige-shade: #c3b38f;
+  --color-accent-shade: #b4955b;
+
+  /* Teintes claires (surfaces, fonds de tags) */
+  --color-primary-tint: #e4e9d8;
+  --color-blue-tint: #e0e9f0;
+  --color-rose-tint: #f1dfe3;
+  --color-beige-tint: #f0e9d6;
+  --color-accent-tint: #efe2c5;
+
+  /* Neutres chauds */
+  --color-text-soft: #5c5a4d;
+  --color-line: #e6e1d4;
+  --color-line-soft: #efeae0;
+  --color-bg-sunken: #f4efe5;
   --color-surface: #ffffff;
-  --color-border: #e4ded0;
+  --color-border: var(--color-line);
 
-  --font-display: 'Dancing Script', cursive;
-  --font-body: 'Playfair Display', serif;
+  /* Accessibilite (decision V5) */
+  /* Texte sur fond dore : encre, 5.03:1 sur --color-accent (le blanc du UI kit echoue). */
+  --color-on-accent: #3d3b2f;
+  /* Contour de focus : 4.5:1 sur --color-bg. */
+  --color-focus: #8c6e35;
+  /* Bordure des champs : 3.26:1 sur --color-bg (la ligne decorative n'atteint pas 3:1). */
+  --color-field-border: #8b8b7a;
 
-  --radius-md: 8px;
-  --radius-lg: 16px;
+  /* Typographie */
+  --font-display: 'Dancing Script', 'Brush Script MT', cursive;
+  --font-body: 'Playfair Display', Georgia, 'Times New Roman', serif;
 
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
+  --fs-display: 52px;
+  --fs-h1: 44px;
+  --fs-h2: 26px;
+  --fs-h3: 19px;
+  --fs-body: 15px;
+  /* 14px minimum du projet : le UI kit prevoit 13px et 12px. */
+  --fs-small: 14px;
+  --fs-tag: 14px;
+
+  --lh-tight: 1.15;
+  --lh-snug: 1.35;
+  --lh-body: 1.6;
+
+  --letter-tag: 0.18em;
+  --letter-h2: 0.005em;
+
+  /* Rayons */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* Ombres */
+  --shadow-page: 0 1px 0 rgba(61, 59, 47, 0.04);
+  --shadow-card: 0 1px 2px rgba(61, 59, 47, 0.04), 0 6px 18px -8px rgba(61, 59, 47, 0.1);
+  --shadow-lift: 0 2px 4px rgba(61, 59, 47, 0.05), 0 14px 32px -10px rgba(61, 59, 47, 0.18);
+  --shadow-press: inset 0 1px 0 rgba(61, 59, 47, 0.06);
+
+  /* Espacements : echelle du UI kit, anciens noms conserves */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-5);
   --spacing-xl: 40px;
 }
 
@@ -79,6 +168,12 @@ a {
  * - .text-muted : accroche (18px), distinguee par l'italique et non par la
  *   couleur (--color-text, 10.6:1).
  */
+/* Regle globale : les composants n'ont pas a redeclarer leur contour de focus. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 small,
 .text-secondary {
   font-size: 14px;
