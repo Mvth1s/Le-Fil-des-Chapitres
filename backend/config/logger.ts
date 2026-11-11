@@ -14,6 +14,23 @@ const loggerConfig = defineConfig({
       enabled: true,
       name: env.get('APP_NAME'),
       level: env.get('LOG_LEVEL'),
+      /*
+      | Defense in depth: AdonisJS does not log headers or bodies by default,
+      | but if a request, its headers or a payload ever end up in a log line,
+      | secrets are replaced by "[Redacted]".
+      */
+      redact: {
+        paths: [
+          'req.headers.authorization',
+          'req.headers.cookie',
+          'req.headers["x-api-key"]',
+          'headers.authorization',
+          'headers.cookie',
+          'headers["x-api-key"]',
+          'password',
+          '*.password',
+        ],
+      },
       transport: {
         targets: targets()
           .pushIf(!app.inProduction, targets.pretty())

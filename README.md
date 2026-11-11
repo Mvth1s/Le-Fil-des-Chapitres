@@ -131,7 +131,15 @@ cd frontend
 cp .env.example .env
 ```
 
-Dans `frontend/.env`, remplacez `NUXT_API_BASE_SERVER` par `http://localhost:3333/api` (le nom `backend` ne résout qu'à l'intérieur du réseau Docker).
+`frontend/.env` contient les variables serveur du proxy Nitro (jamais envoyées au navigateur) :
+
+| Variable | Rôle | Valeur hors Docker |
+|---|---|---|
+| `NUXT_API_UPSTREAM` | URL du backend jointe par le proxy `/api/**` | `http://localhost:3333/api` (en Docker : `http://backend:3333/api`) |
+| `NUXT_API_KEY` | Valeur de l'en-tête `X-Api-Key`, identique à `API_KEY` du backend | vide en développement |
+| `NUXT_BASIC_AUTH_USER`, `NUXT_BASIC_AUTH_PASSWORD` | Basic Auth devant le frontend | vides en développement (désactivée) |
+
+En production, ces quatre variables sont obligatoires (voir `docs/DEPLOIEMENT.md`).
 
 ```bash
 npm ci
@@ -179,8 +187,8 @@ le-fil-des-chapitres/
 ## 📖 Documentation
 
 - [Cahier des charges](CAHIER_DES_CHARGES.md) — Spécifications complètes du projet
-- [Déploiement](docs/DEPLOIEMENT.md) *(à venir)*: Hébergement alwaysdata et Vercel
-- [Sécurité](docs/SECURITE.md) *(à venir)*: Politique de sécurité
+- [Déploiement](docs/DEPLOIEMENT.md) : hébergement alwaysdata et Vercel, pas à pas
+- [Sécurité](docs/SECURITE.md) : socle de sécurité et rotation des secrets
 - [API Reference](docs/api.md) *(à venir)* — Documentation des endpoints
 - [Guide de contribution](CONTRIBUTING.md) *(à venir)*
 

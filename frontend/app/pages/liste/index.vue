@@ -9,8 +9,8 @@ const {
   error,
   refresh,
 } = await useFetch<UserWebtoon[]>(`${apiBase}/user/list`, {
-  // Cle stable, independante de l'URL (voir catalogue/index.vue) : necessaire
-  // car apiBase differe entre le SSR et le navigateur.
+  // Cle stable, independante de l'URL (voir catalogue/index.vue) : partagee
+  // entre le SSR et l'hydratation.
   key: 'user-list',
 })
 

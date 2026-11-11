@@ -535,6 +535,16 @@ Règles de contrat de la liste de lecture :
 |---|---|---|
 | `GET` | `/api/stats` | Retourne les statistiques de lecture de l'utilisateur |
 
+#### Santé
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Public, hors `/api`, sans `X-Api-Key`. `200` `{"status":"ok"}` si la base répond, `503` `{"status":"error"}` sinon. N'expose aucun détail. |
+
+#### Protection en production
+
+En production, toute requête `/api/**` doit porter l'en-tête `X-Api-Key` (valeur de `API_KEY` du backend), sinon `401`. Le proxy Nitro du frontend l'ajoute ; le navigateur ne la voit jamais. Hors production, si `API_KEY` est absente, la vérification est désactivée.
+
 ---
 
 ## 11. Exigences non-fonctionnelles
