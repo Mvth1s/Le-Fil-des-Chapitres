@@ -1,19 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import {
-  filterAndSortWebtoons as rawFilterAndSortWebtoons,
-  type CatalogueCriteria,
-} from '../../app/utils/catalogue'
-import { normalizeSearch } from '../../app/utils/search'
-import type { Webtoon } from '../../app/types/webtoon'
-import type { UserWebtoonStatus } from '../../app/types/user-webtoon'
-
-// catalogue.ts importe ses types via l'alias '~', non resolu par le projet
-// TypeScript par defaut qu'ESLint utilise pour tests/ : on retype pour le lint.
-const filterAndSortWebtoons = rawFilterAndSortWebtoons as (
-  webtoons: Webtoon[],
-  criteria: CatalogueCriteria,
-  statusByWebtoonId: Map<string, UserWebtoonStatus>
-) => Webtoon[]
+import { filterAndSortWebtoons, type CatalogueCriteria } from '~/utils/catalogue'
+import type { Webtoon } from '~/types/webtoon'
+import type { UserWebtoonStatus } from '~/types/user-webtoon'
 
 const fantasy = { id: 'g1', name: 'Fantasy', slug: 'fantasy' }
 const romance = { id: 'g2', name: 'Romance', slug: 'romance' }
@@ -126,30 +114,5 @@ describe('filterAndSortWebtoons', () => {
     const input = [a, b, c]
     run({ sort: 'recent', genreId: 'g1' }, input)
     expect(input).toEqual([a, b, c])
-  })
-})
-
-// Regroupe ici (et non dans search.spec.ts) : ESLint limite a 8 le nombre de
-// fichiers du projet par defaut (allowDefaultProject).
-describe('normalizeSearch', () => {
-  it('met en minuscules', () => {
-    expect(normalizeSearch('Solo LEVELING')).toBe('solo leveling')
-  })
-
-  it('retire les accents', () => {
-    expect(normalizeSearch('é è ê à ç ï ô ñ')).toBe('e e e a c i o n')
-  })
-
-  it('retire les accents des majuscules', () => {
-    expect(normalizeSearch('ÉLÈVE ÇA ÎLE')).toBe('eleve ca ile')
-  })
-
-  it('supprime les espaces en debut et fin', () => {
-    expect(normalizeSearch('  Tower of God  ')).toBe('tower of god')
-  })
-
-  it('renvoie une chaine vide pour une entree vide ou blanche', () => {
-    expect(normalizeSearch('')).toBe('')
-    expect(normalizeSearch('   ')).toBe('')
   })
 })
