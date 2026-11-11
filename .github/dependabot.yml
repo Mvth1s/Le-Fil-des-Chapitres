@@ -1,8 +1,8 @@
 # Mises a jour automatiques des dependances : une PR groupee par mois et par
 # dossier, ouverte sur dev pour passer par la CI avant d'arriver sur main.
 # Avec target-branch, ces options ne s'appliquent plus aux mises a jour de
-# securite : celles-ci restent actives, ciblent main et ne sont ni ignorees
-# ni retardees par les regles ci-dessous.
+# securite : celles-ci sont un reglage du depot (desactive au 2026-11-11) et,
+# si elles sont activees, ciblent main sans suivre ces regles.
 version: 2
 updates:
   # Backend : mineures et correctifs regroupes, majeures ignorees (a faire a

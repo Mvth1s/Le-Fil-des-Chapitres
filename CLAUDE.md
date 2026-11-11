@@ -181,8 +181,9 @@ release.
 **Dependabot** (`.github/dependabot.yml`) : mises à jour de version mensuelles, ciblant `dev`,
 un groupe mineures + correctifs par dossier, majeures npm ignorées (faites à la main),
 majeures des actions regroupées, délai de 14 jours après publication, 2 PR ouvertes au plus.
-Les mises à jour de sécurité ne suivent pas ces règles et ciblent `main` : après une telle
-PR, resynchroniser `main` vers `dev`.
+Les mises à jour de sécurité (réglage de dépôt, désactivé au 2026-11-11) ne suivent pas ces
+règles et ciblent `main` : si elles sont activées, relire une telle PR comme une release,
+puis resynchroniser `main` vers `dev`.
 
 **Commits :** `type: description courte en minuscules`
 Types : `feat`, `fix`, `chore`, `style`, `refactor`, `docs`, `test`, `deploy`.
@@ -265,7 +266,7 @@ Socle "PME", détaillé dans `docs/SECURITE.md` :
   utilisé par le backend), `_ro` (lecture seule). Le même modèle tourne en local et en CI.
 - Seul le pseudo `Mvth1s` apparaît dans le dépôt.
 - CI bloquante : gitleaks, `npm audit --omit=dev --audit-level=high`, actions épinglées par
-  SHA, `permissions:` minimales. Dependabot hebdomadaire.
+  SHA, `permissions:` minimales. Dependabot mensuel vers `dev` (voir section 9).
 
 ---
 
