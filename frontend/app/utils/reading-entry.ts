@@ -13,15 +13,16 @@ export interface ReadingEntryFormValues {
 }
 
 // Corps de PUT /api/user/list/:id (backend/app/validators/update_user_webtoon.ts).
-// Les champs vides sont omis : le backend ne sait pas encore effacer une
-// note, un commentaire ou une date deja renseignes.
+// Le formulaire envoie toujours les quatre champs facultatifs : null efface
+// la valeur cote serveur (un null deja nul est sans effet, inutile donc de
+// comparer avec la valeur initiale de l'entree).
 export interface ReadingEntryPayload {
   status: UserWebtoonStatus
   chaptersRead: number
-  rating?: number
-  comment?: string
-  startedAt?: string
-  finishedAt?: string
+  rating: number | null
+  comment: string | null
+  startedAt: string | null
+  finishedAt: string | null
 }
 
 function isBlank(value: string | number) {
@@ -74,10 +75,10 @@ export function toReadingEntryPayload(values: ReadingEntryFormValues): ReadingEn
   return {
     status: values.status,
     chaptersRead: Number(values.chaptersRead),
-    ...(!isBlank(values.rating) && { rating: Number(values.rating) }),
-    ...(comment !== '' && { comment }),
-    ...(values.startedAt !== '' && { startedAt: values.startedAt }),
-    ...(values.finishedAt !== '' && { finishedAt: values.finishedAt }),
+    rating: isBlank(values.rating) ? null : Number(values.rating),
+    comment: comment === '' ? null : comment,
+    startedAt: values.startedAt === '' ? null : values.startedAt,
+    finishedAt: values.finishedAt === '' ? null : values.finishedAt,
   }
 }
 
