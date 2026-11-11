@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ReadingEntryForm from '../../app/components/ReadingEntryForm.vue'
 import ReadingProgressInput from '../../app/components/ReadingProgressInput.vue'
@@ -81,12 +81,32 @@ describe('validateReadingEntry', () => {
     const errors = validateReadingEntry(formValues({ chaptersRead: 51 }), 50)
     expect(Object.keys(errors)).toEqual(['chaptersRead'])
   })
+
+  it('refuse une date de fin anterieure a la date de debut', () => {
+    const errors = validateReadingEntry(
+      formValues({ startedAt: '2026-03-04', finishedAt: '2026-03-03' }),
+      50
+    )
+    expect(Object.keys(errors)).toEqual(['finishedAt'])
+  })
+
+  it('accepte des dates egales ou une seule date renseignee', () => {
+    expect(validateReadingEntry(formValues({ startedAt: '2026-03-04', finishedAt: '2026-03-04' }), 50)).toEqual({})
+    expect(validateReadingEntry(formValues({ finishedAt: '2026-03-04' }), 50)).toEqual({})
+  })
 })
 
 describe('toReadingEntryPayload', () => {
-  it('omet note, commentaire vide (apres trim) et dates vides', () => {
+  it('envoie null pour note, commentaire vide (apres trim) et dates vides', () => {
     const payload = toReadingEntryPayload(formValues({ chaptersRead: '12', comment: '   ' }))
-    expect(payload).toEqual({ status: 'reading', chaptersRead: 12 })
+    expect(payload).toEqual({
+      status: 'reading',
+      chaptersRead: 12,
+      rating: null,
+      comment: null,
+      startedAt: null,
+      finishedAt: null,
+    })
   })
 
   it('convertit les nombres et garde les champs renseignes, commentaire trimme', () => {
@@ -222,7 +242,7 @@ describe('ReadingEntryForm', () => {
     expect(wrapper.text()).toContain('par pas de 0,5')
   })
 
-  it('emet le payload attendu, sans les champs vides', async () => {
+  it('emet le payload attendu, avec null pour les champs vides', async () => {
     const wrapper = mountForm()
     await wrapper.find('select').setValue('completed')
     await wrapper.findAll('input')[CHAPTERS].setValue('50')
@@ -231,8 +251,68 @@ describe('ReadingEntryForm', () => {
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit')).toEqual([
-      [{ status: 'completed', chaptersRead: 50, rating: 7.5, comment: 'Top' }],
+      [
+        {
+          status: 'completed',
+          chaptersRead: 50,
+          rating: 7.5,
+          comment: 'Top',
+          startedAt: null,
+          finishedAt: null,
+        },
+      ],
     ])
+  })
+
+  it('emet null pour les champs deja renseignes puis vides', async () => {
+    const wrapper = mountForm(
+      {},
+      makeEntry({ rating: 8, comment: 'Bien', startedAt: '2026-01-02', finishedAt: '2026-02-03' })
+    )
+    const inputs = wrapper.findAll('input')
+    await inputs[RATING].setValue('')
+    await inputs[2].setValue('')
+    await inputs[3].setValue('')
+    await wrapper.find('textarea').setValue('  ')
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit')).toEqual([
+      [
+        {
+          status: 'reading',
+          chaptersRead: 12,
+          rating: null,
+          comment: null,
+          startedAt: null,
+          finishedAt: null,
+        },
+      ],
+    ])
+  })
+
+  it('n\'emet pas submit si la date de fin precede la date de debut', async () => {
+    const wrapper = mountForm()
+    const inputs = wrapper.findAll('input')
+    await inputs[2].setValue('2026-03-04')
+    await inputs[3].setValue('2026-03-03')
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit')).toBeUndefined()
+    expect(wrapper.text()).toContain('La date de fin ne peut pas précéder la date de début.')
+    expect(inputs[3].attributes('aria-invalid')).toBe('true')
+  })
+
+  it('focalise le premier champ en erreur apres un echec de validation', async () => {
+    const wrapper = mount(ReadingEntryForm, { props: { entry: makeEntry() }, attachTo: document.body })
+    const inputs = wrapper.findAll('input')
+    await inputs[RATING].setValue('7.3')
+    await inputs[2].setValue('2026-03-04')
+    await inputs[3].setValue('2026-03-03')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(document.activeElement).toBe(inputs[RATING].element)
+    wrapper.unmount()
   })
 
   it('affiche les erreurs serveur sous les champs correspondants', () => {
