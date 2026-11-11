@@ -6,7 +6,7 @@
 
 **Suivez, organisez et gérez votre lecture de webtoons.**
 
-[![Version](https://img.shields.io/badge/version-0.1.0--dev-blue?style=flat-square)](https://github.com/Mvth1s/Le-Fil-des-Chapitres)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue?style=flat-square)](https://github.com/Mvth1s/Le-Fil-des-Chapitres)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-green?style=flat-square)](LICENSE)
 [![Nuxt 4](https://img.shields.io/badge/Nuxt-4.x-00DC82?style=flat-square&logo=nuxt.js)](https://nuxt.com)
 [![AdonisJS](https://img.shields.io/badge/AdonisJS-7.x-5A45FF?style=flat-square)](https://adonisjs.com)

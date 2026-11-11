@@ -6,6 +6,33 @@ Versionnage : [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-11
+
+Refonte visuelle alignée sur le UI kit Claude Design.
+
+### Ajouté
+
+- Sources du UI kit dans `Maquette/ui-kit/` (#39).
+- Tokens du UI kit, couleurs de statut et de genre, polices auto-hébergées (#40).
+- Couvertures générées (9 dégradés, pile de livres), pastille de statut, tags de genre et carte webtoon (#41).
+- Accueil en tableau de bord (#43).
+- Données de démonstration plus riches pour le développement (#48).
+
+### Modifié
+
+- Header, recherche globale et menu mobile (#42).
+- Catalogue (#44), liste de lecture avec onglets de statut et modale d'édition (#45), statistiques (#46), fiche webtoon et formulaires (#47).
+- Polices servies depuis `/fonts` (plus de Google Fonts), taille minimale de 14 px (#40).
+
+### Corrigé
+
+- Séparateur de milliers visible et pistes de la barre de statistiques alignées (#49).
+
+### Sécurité
+
+- Tokens d'accessibilité (`--color-on-accent`, `--color-focus`, `--color-field-border`) pour le contraste AA (#40).
+- CSP `font-src 'self'` : plus de ressource de police externe (#40).
+
 ## [0.1.0] - 2026-11-11
 
 Première version (Phase 1, MVP). Les PR #1 et #2 portent les ressources du projet.
@@ -49,5 +76,6 @@ Première version (Phase 1, MVP). Les PR #1 et #2 portent les ressources du proj
 - Socle de sécurité : secrets hors dépôt, trois rôles PostgreSQL (`_owner`, `_app`, `_ro`) (#18).
 - Proxy Nitro avec `X-Api-Key`, HTTP Basic Auth sur le frontend, `GET /health` public (#25).
 
-[Unreleased]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/releases/tag/v0.1.0

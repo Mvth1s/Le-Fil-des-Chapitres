@@ -28,7 +28,7 @@
 |---|---|
 | **Nom** | Le Fil des Chapitres |
 | **Type** | Application web full-stack |
-| **Version actuelle** | 0.1.0 (en développement) |
+| **Version actuelle** | 0.1.1 (en développement) |
 | **Licence** | MIT |
 | **Auteur** | Mvth1s |
 | **Dépôt** | GitHub (privé / public) |
@@ -454,16 +454,76 @@ Le projet repose sur une séparation claire entre :
 
 ### Palette de couleurs
 
-| Rôle | Couleur | Hex | Aperçu |
+Tokens définis dans `frontend/app/assets/css/main.css`, issus du UI kit.
+
+**Teintes de la charte**
+
+| Token | Hex | Rôle |
+|---|---|---|
+| `--color-primary` | `#8B9B6A` | Vert olive, actions principales |
+| `--color-blue` | `#8FAEC5` | Bleu poudré |
+| `--color-rose` | `#C89BA5` | Rose poudré |
+| `--color-beige` | `#D4C4A0` | Beige chaud |
+| `--color-accent` | `#C9A96E` | Fil doré |
+| `--color-text` | `#3D3B2F` | Texte principal |
+| `--color-text-muted` | `#8B8B7A` | Gris chaud (3,26:1 sur le fond : jamais pour du texte) |
+| `--color-bg` | `#FAF8F4` | Fond principal |
+
+**Nuances et teintes**
+
+| Famille | Nuance sombre (survol, appui) | Teinte claire (surfaces, tags) |
+|---|---|---|
+| Primary | `#7A8A59` | `#E4E9D8` |
+| Blue | `#7E9DB4` | `#E0E9F0` |
+| Rose | `#B78A94` | `#F1DFE3` |
+| Beige | `#C3B38F` | `#F0E9D6` |
+| Accent | `#B4955B` | `#EFE2C5` |
+
+**Neutres chauds**
+
+| Token | Hex | Rôle |
+|---|---|---|
+| `--color-text-soft` | `#5C5A4D` | Encre douce |
+| `--color-line` | `#E6E1D4` | Lignes et bordures décoratives |
+| `--color-line-soft` | `#EFEAE0` | Lignes discrètes |
+| `--color-bg-sunken` | `#F4EFE5` | Fond en creux |
+| `--color-surface` | `#FFFFFF` | Surface des cartes |
+
+**Tokens d'accessibilité** (écarts volontaires au UI kit, qui échoue au contraste AA)
+
+| Token | Hex | Ratio | Usage |
 |---|---|---|---|
-| Vert olive (livre 1) | Vert sauge pastel | `#8B9B6A` | 🟢 |
-| Bleu poudré (livre 2) | Bleu ardoise clair | `#8FAEC5` | 🔵 |
-| Rose poudré (livre 3) | Rose mauve doux | `#C89BA5` | 🩷 |
-| Beige (livre 4) | Beige chaud | `#D4C4A0` | 🟡 |
-| Fil doré | Or doux | `#C9A96E` | 🟠 |
-| Texte principal | Brun très foncé | `#3D3B2F` | ⚫ |
-| Texte secondaire | Gris chaud | `#8B8B7A` | 🩶 |
-| Fond principal | Blanc cassé crème | `#FAF8F4` | ⬜ |
+| `--color-on-accent` | `#3D3B2F` | 5,03:1 sur `--color-accent` | Texte sur fond doré |
+| `--color-focus` | `#8C6E35` | 4,5:1 sur `--color-bg` | Contour de focus (2 px) |
+| `--color-field-border` | `#8B8B7A` | 3,26:1 sur `--color-bg` | Bordure des champs |
+
+### Couleurs de statut
+
+Pastille décorative, le libellé reste en `--color-text`.
+
+| Statut | Couleur |
+|---|---|
+| `reading` | Sauge (`--color-primary`) |
+| `completed` | Bleu (`--color-blue`) |
+| `on_hold` | Beige (`--color-beige`) |
+| `dropped` | Rose (`--color-rose`) |
+| `plan_to_read` | Gris (`--color-text-muted`) |
+
+### Couleurs de genre
+
+Cinq tons (sauge, bleu, rose, beige, neutre), chacun un couple fond et texte à plus de 4,5:1. Les 14 genres du référentiel y sont rattachés ; tout genre inconnu prend le ton neutre.
+
+| Ton | Genres |
+|---|---|
+| Sauge | Action, Comédie, Sports, Historique |
+| Bleu | Thriller, Mystère, Surnaturel, Science-Fiction |
+| Rose | Romance, Horreur, Isekai |
+| Beige | Fantasy, Drame, Tranche de vie |
+| Neutre | Repli pour tout autre genre |
+
+### Couvertures générées
+
+Sans image, la couverture est un dégradé suivi d'une pile de livres. Neuf dégradés sont construits sur les teintes de la charte (sauge, bleu, rose, beige, quatre mélanges et un dégradé nuit dorée). Le choix est déterministe : un hash de l'identifiant du webtoon donne toujours le même dégradé. `cover_url` n'accepte que des URL externes.
 
 ### Typographie
 
@@ -474,9 +534,13 @@ Le projet repose sur une séparation claire entre :
 | Titres de section (H2) | Playfair Display | Bold 700 | 24–28px |
 | Titres de carte (H3) | Playfair Display | SemiBold 600 | 18–20px |
 | Corps de texte, labels | Playfair Display | Regular 400 | 14–16px |
-| Badges, tags, statuts | Playfair Display | Italic 400 | 12–13px |
+| Badges, tags, statuts | Playfair Display | Italic 400 | 14px |
 
-> Les deux polices sont disponibles gratuitement sur [Google Fonts](https://fonts.google.com).
+Échelle des tokens : affichage 52px, H1 44px, H2 26px, H3 19px, corps 15px, petit texte et tags 14px. La taille minimale est 14px partout, tags et badges compris (le UI kit prévoit 12 et 13px).
+
+### Polices auto-hébergées
+
+Dancing Script et Playfair Display (romain et italique) sont servies en woff2 variables depuis `frontend/public/fonts/`, sous licence OFL (texte joint à chaque police). Il n'y a plus d'appel à Google Fonts : la CSP impose `font-src 'self'`.
 
 ---
 

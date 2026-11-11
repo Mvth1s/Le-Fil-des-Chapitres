@@ -21,7 +21,7 @@ repart d'ici.
   catalogue, liste, statistiques, fiche et formulaires)
 - [x] Lot 4 : `chore/dev-demo-data` (11 titres sans image, 10 entrées sur les 5 statuts ; un reseed
   réapplique les valeurs de démo sur ces entrées)
-- [ ] Lot 5 : contrôle visuel et release v0.1.1
+- [x] Lot 5 : contrôle visuel (PR #49) et release v0.1.1 (`chore/release-0.1.1`)
 
 ## Points signalés
 
@@ -50,7 +50,32 @@ repart d'ici.
   d'API laissée à Mvth1s.
 - Rang des mieux notés en `#8C6E35` (4,78:1) : les ors du UI kit échouent AA, même en grand texte.
 
-(Complété au lot 5.)
+- Accueil et catalogue : boutons d'action du hero plus grands que dans le UI kit (taille
+  `AppButton` standard, cible tactile confortable).
+- Fiche et formulaires : pas d'écran correspondant dans le UI kit ; composés avec son
+  vocabulaire (V1).
+- Liste : le +1 n'apparaît que sur les entrées `reading`, le reste passe par la modale (V7).
+
+## Contrôle visuel (lot 5)
+
+Captures headless (Chromium headless shell de Playwright, base de démo du lot 4) de
+l'accueil, du catalogue, de la liste, des statistiques, de la fiche et du formulaire de
+création à 375, 768 et 1440 px, comparées à `Maquette/ui-kit/captures/`. Écarts corrigés :
+- séparateur de milliers invisible (U+202F absent de Playfair Display) : remplacé par U+00A0 ;
+- pistes des barres de statistiques non alignées : colonne de valeur commune.
+Plus de grandes zones vides à 1440 px ; aucun défilement horizontal relevé à 375 px.
+
+## Accessibilité (lot 5)
+
+- Ratios de contraste des tokens et des tons de genre recalculés par
+  `frontend/tests/utils/design-tokens.spec.ts`.
+- Focus visible : règle globale `:focus-visible` en `--color-focus` (4,5:1), lien d'évitement,
+  focus déplacé quand une carte disparaît (accueil, liste, fiche), retour du focus à la
+  fermeture des modales ; couvert par les tests de pages.
+- Clavier : carte en lien étiré sans bouton imbriqué, puces et onglets en boutons
+  `aria-pressed`, menu mobile avec Échap, tableau défilable focusable.
+- `prefers-reduced-motion` : règle globale neutralisant les transitions.
+- Non vérifié : parcours clavier complet dans un navigateur réel et lecteur d'écran.
 
 ## Suggestions de relecture non traitées
 
