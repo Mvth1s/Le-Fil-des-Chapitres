@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
 import ReadingEntryForm from '~/components/ReadingEntryForm.vue'
-import ReadingProgressInput from '~/components/ReadingProgressInput.vue'
 import type { UserWebtoon } from '~/types/user-webtoon'
 
 function makeEntry(overrides: Partial<UserWebtoon> = {}, chaptersTotal: number | null = 50): UserWebtoon {
@@ -201,60 +199,5 @@ describe('ReadingEntryForm', () => {
     await at(wrapper.findAll('button'), 0).trigger('click')
     expect(wrapper.emitted('cancel')).toHaveLength(1)
     expect(wrapper.emitted('submit')).toBeUndefined()
-  })
-})
-
-describe('ReadingProgressInput', () => {
-  function mountInput(props: Record<string, unknown> = {}) {
-    return mount(ReadingProgressInput, { props: { chaptersRead: 12, chaptersTotal: 50, ...props } })
-  }
-
-  it('emet la nouvelle valeur quand elle est valide et differente', async () => {
-    const wrapper = mountInput()
-    await wrapper.find('input').setValue('20')
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')).toEqual([[20]])
-  })
-
-  it('n\'emet rien si la valeur est inchangee', async () => {
-    const wrapper = mountInput()
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')).toBeUndefined()
-    expect(wrapper.find('input').attributes('aria-invalid')).toBe('false')
-  })
-
-  it('n\'emet rien et affiche l\'erreur si la valeur depasse le total', async () => {
-    const wrapper = mountInput()
-    await wrapper.find('input').setValue('51')
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')).toBeUndefined()
-    expect(wrapper.text()).toContain('50 chapitres au maximum')
-  })
-
-  it('n\'emet rien si la valeur est vide', async () => {
-    const wrapper = mountInput()
-    await wrapper.find('input').setValue('')
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')).toBeUndefined()
-    expect(wrapper.find('input').attributes('aria-invalid')).toBe('true')
-  })
-
-  it('n\'emet rien quand disabled', async () => {
-    const wrapper = mountInput({ disabled: true })
-    await wrapper.find('input').setValue('20')
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')).toBeUndefined()
-  })
-
-  it('se recale sur la prop et efface l\'erreur quand chaptersRead change', async () => {
-    const wrapper = mountInput()
-    await wrapper.find('input').setValue('51')
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.find('input').attributes('aria-invalid')).toBe('true')
-
-    await wrapper.setProps({ chaptersRead: 13 })
-    await nextTick()
-    expect(wrapper.find('input').element.value).toBe('13')
-    expect(wrapper.find('input').attributes('aria-invalid')).toBe('false')
   })
 })

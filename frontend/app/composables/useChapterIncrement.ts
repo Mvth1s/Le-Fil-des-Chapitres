@@ -2,11 +2,10 @@ import type { Ref } from 'vue'
 import type { UserWebtoon } from '~/types/user-webtoon'
 
 /*
- * "+1 chapitre" depuis une WebtoonCard (accueil, catalogue). `entries` est la
- * donnee de useFetch('user-list') : la remplacer suffit a mettre a jour toutes
- * les pages qui partagent cette cle. Pas de mise a jour optimiste : le bouton
- * est inactif (busy) le temps de la requete. pages/liste garde sa propre
- * logique (optimiste, saisie directe).
+ * "+1 chapitre" depuis une WebtoonCard (accueil, catalogue, liste). `entries`
+ * est la donnee de useFetch('user-list') : la remplacer suffit a mettre a jour
+ * toutes les pages qui partagent cette cle. Pas de mise a jour optimiste : le
+ * bouton est inactif (busy) le temps de la requete.
  */
 export function useChapterIncrement(entries: Ref<UserWebtoon[] | undefined>) {
   const apiBase = useApiBase()
