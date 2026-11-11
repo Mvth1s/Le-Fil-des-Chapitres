@@ -11,14 +11,15 @@ Mises à jour de dépendances.
 ### Modifié
 
 - Backend : `pg` 8.23.1, `@types/luxon` 3.7.6, `typescript` 6.0 (aligné sur le frontend, borne `~6.0` car typescript-eslint exige une version inférieure à 6.1).
-- Frontend : `vitest` 5.1, `@nuxt/test-utils` 4.4 (compatible vitest 5), `typescript` borné à `~6.0`.
+- Frontend : `typescript` borné à `~6.0`, `vue-tsc` épinglé en version exacte 3.3.11.
 - CI : `actions/checkout` v7.0.1 et `actions/setup-node` v7.1.0, toujours épinglées par SHA.
 
 ### Non retenu
 
 - `typescript` 7.0 : pas d'API programmatique stable, `vue-tsc` et typescript-eslint incompatibles. À reprendre avec la 7.1.
 - `@types/node` 26 : les types suivent le runtime Node.js 24.
-- `vue-tsc` 3.3.12 à 3.3.14 : faux positifs TS2339 sur les handlers inline de `design-system.vue`. Maintien en 3.3.11.
+- `vitest` 5 (et `@nuxt/test-utils` 4.4 qui l'accepte) : publiés depuis moins de 14 jours ; montée à faire à la main plus tard, Dependabot ignorant les majeures npm.
+- `vue-tsc` 3.3.12 à 3.3.14 : faux positifs TS2339 sur les handlers inline de `design-system.vue`. Version épinglée en exact 3.3.11 ; Dependabot ignore les versions >=3.3.12 <3.4.0.
 
 ## [0.1.1] - 2026-11-11
 
