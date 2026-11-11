@@ -87,3 +87,7 @@ coverage/
 # DOCKER (volumes locaux)
 # ================================
 postgres_data/
+
+# AdonisJS 7 : code genere a chaque build/serve/test, et schema Lucid regenere par migration:run
+.adonisjs/
+backend/database/schema.ts

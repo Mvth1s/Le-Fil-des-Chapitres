@@ -1,0 +1,20 @@
+# Image de developpement pour le backend AdonisJS.
+# Pas de multi-stage build ici : en dev, le code vit dans un volume monte
+# depuis l'hote (voir docker-compose.yml), ce Dockerfile ne sert qu'a
+# obtenir un environnement Node avec les dependances deja installees.
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Copier uniquement les manifests d'abord pour profiter du cache Docker :
+# tant que les manifests ne changent pas, "npm ci" n'est pas rejoue. npm ci
+# installe exactement le lockfile et echoue s'il diverge de package.json.
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+EXPOSE 3333
+
+# --hmr : recharge les fichiers modifies sans redemarrer tout le process.
+CMD ["node", "ace", "serve", "--hmr"]

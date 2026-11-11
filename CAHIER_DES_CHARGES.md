@@ -30,7 +30,7 @@
 | **Type** | Application web full-stack |
 | **Version actuelle** | 0.1.0 (en développement) |
 | **Licence** | MIT |
-| **Auteur** | Mathis AGUADO |
+| **Auteur** | Mvth1s |
 | **Dépôt** | GitHub (privé / public) |
 
 ### En une phrase
@@ -204,6 +204,10 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 
 > En tant qu'utilisateur, je veux modifier le statut, la note ou le commentaire d'un webtoon de ma liste afin de les maintenir à jour.
 
+**Fonctionnalités :**
+- Les dates de début et de fin, la note et le commentaire peuvent aussi être modifiés ou effacés
+- Note de 0 à 10 par pas de 0,5
+
 ---
 
 #### US-08 — Retirer un webtoon de ma liste de lecture
@@ -263,13 +267,13 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 ```
 ┌─────────────────────────────────────────────┐
 │                   CLIENT                    │
-│              Nuxt 3 (Vue 3)                 │
+│              Nuxt 4 (Vue 3)                 │
 │         Interface utilisateur web           │
 └─────────────────┬───────────────────────────┘
                   │ HTTP / REST API (JSON)
 ┌─────────────────▼───────────────────────────┐
 │                  SERVEUR                    │
-│                AdonisJS 6                   │
+│                AdonisJS 7                   │
 │        API REST + Logique métier            │
 └─────────────────┬───────────────────────────┘
                   │ Requêtes SQL (via Lucid ORM)
@@ -279,24 +283,25 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 │           Stockage persistant               │
 └─────────────────────────────────────────────┘
 
-      Tous les services tournent dans Docker
+      En local, tous les services tournent dans Docker.
+      En production : Vercel (frontend), alwaysdata (backend et PostgreSQL).
 ```
 
 ### Stack technologique
 
 | Couche | Technologie | Version | Rôle |
 |---|---|---|---|
-| **Frontend** | Nuxt 3 | 3.x | Framework Vue.js avec SSR, routing, et gestion d'état |
+| **Frontend** | Nuxt 4 | 4.x | Framework Vue.js avec SSR, routing, et gestion d'état |
 | **UI** | Vue 3 | 3.x | Composants réactifs |
-| **Backend** | AdonisJS | 6.x | Framework Node.js MVC, gestion des routes API |
-| **ORM** | Lucid (natif Adonis) | 6.x | Communication avec PostgreSQL en TypeScript |
+| **Backend** | AdonisJS | 7.x (Node.js 24) | Framework Node.js MVC, gestion des routes API |
+| **ORM** | Lucid (natif Adonis) | 22.x | Communication avec PostgreSQL en TypeScript |
 | **Base de données** | PostgreSQL | 16.x | Stockage relationnel des données |
 | **Conteneurisation** | Docker + Docker Compose | — | Déploiement et isolation des services |
 | **Langage** | TypeScript | 5.x | Typage statique côté frontend et backend |
 
 ### Justification des choix
 
-**Nuxt 3** — SSR natif, routing intégré, excellent support TypeScript, adapté à une application de taille moyenne avec des pages de listes et des formulaires.
+**Nuxt 4** — SSR natif, routing intégré, excellent support TypeScript, adapté à une application de taille moyenne avec des pages de listes et des formulaires.
 
 **AdonisJS** — Framework structuré (MVC) qui impose de bonnes pratiques sans être aussi complexe que NestJS. Inclut nativement : ORM (Lucid), validation, gestion des migrations, authentification. Idéal pour un développeur junior qui veut construire proprement.
 
@@ -305,6 +310,20 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 **PostgreSQL** — Base de données relationnelle robuste, référence de l'industrie, parfaitement adaptée aux données structurées du projet (webtoons, genres, listes).
 
 **Docker + Docker Compose** — Permet de lancer l'application complète (frontend, backend, base de données) avec une seule commande, sur n'importe quelle machine. Indispensable pour l'auto-hébergement.
+
+### Hébergement de production
+
+| Service | Plateforme | Détail |
+|---|---|---|
+| Frontend | Vercel Hobby | Région `cdg1`, déploiement par l'intégration Git native |
+| Backend | alwaysdata, offre Free | Site Node.js (1 Go disque, 256 Mo RAM, usage personnel non lucratif) |
+| Base de données | PostgreSQL alwaysdata | Même compte que le backend |
+
+**Protection de l'instance publique.** Le navigateur ne parle qu'au frontend. Toutes les requêtes `/api/**` passent par une route serveur Nitro (proxy) qui les relaie au backend en ajoutant un en-tête `X-Api-Key`. Le frontend entier est protégé par HTTP Basic Auth. Le backend exige `X-Api-Key` en production. `GET /health` est public et n'expose aucune information sensible.
+
+> Ce n'est pas une authentification utilisateur : pas de JWT, de session ni de page de login. L'authentification réelle reste en Phase 3.
+
+Détails opérationnels : `docs/DEPLOIEMENT.md` et `docs/SECURITE.md`.
 
 ---
 
@@ -360,7 +379,7 @@ Le projet repose sur une séparation claire entre :
 | `created_at` | TIMESTAMP | NOT NULL | Date de création |
 | `updated_at` | TIMESTAMP | NOT NULL | Date de dernière modification |
 
-> **Note Phase 1 :** En mono-utilisateur, un seul enregistrement existera dans cette table. La structure est prête pour le multi-utilisateurs.
+> **Note Phase 1 :** En mono-utilisateur, un seul enregistrement existera dans cette table. La structure est prête pour le multi-utilisateurs. En production, cet utilisateur unique est créé par un seeder de bootstrap idempotent (`APP_OWNER_USERNAME`, `APP_OWNER_PASSWORD`), qui garantit aussi les 14 genres et s'exécute à chaque déploiement.
 
 ---
 
@@ -463,7 +482,7 @@ Le projet repose sur une séparation claire entre :
 
 ## 10. Structure de l'application
 
-### Routes frontend (Nuxt 3)
+### Routes frontend (Nuxt 4)
 
 | Route | Page | Description |
 |---|---|---|
@@ -493,9 +512,16 @@ Le projet repose sur une séparation claire entre :
 |---|---|---|
 | `GET` | `/api/user/list` | Récupère la liste de lecture de l'utilisateur |
 | `POST` | `/api/user/list` | Ajouter un webtoon à la liste |
-| `PUT` | `/api/user/list/:id` | Modifier une entrée (statut, chapitres, note) |
+| `PUT` | `/api/user/list/:id` | Modifier une entrée (statut, chapitres, note, commentaire, dates) |
 | `PATCH` | `/api/user/list/:id/progress` | Mise à jour rapide de la progression (+1 chapitre) |
 | `DELETE` | `/api/user/list/:id` | Retirer un webtoon de la liste |
+
+Règles de contrat de la liste de lecture :
+
+- `PUT` : un champ absent n'est pas modifié. `rating`, `comment`, `startedAt` et `finishedAt` acceptent `null` pour effacer la valeur.
+- `rating` (`POST` et `PUT`) : entre 0 et 10, par pas de 0,5.
+- `chaptersRead` (`POST`, `PUT` et `PATCH .../progress`) : entier positif ou nul, jamais supérieur à `chapters_total` quand il est défini.
+- `finished_at` est renseigné automatiquement au passage au statut `completed` (y compris par atteinte de `chapters_total`), s'il n'est pas déjà fourni.
 
 #### Genres
 
@@ -508,6 +534,16 @@ Le projet repose sur une séparation claire entre :
 | Méthode | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/stats` | Retourne les statistiques de lecture de l'utilisateur |
+
+#### Santé
+
+| Méthode | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Public, hors `/api`, sans `X-Api-Key`. `200` `{"status":"ok"}` si la base répond, `503` `{"status":"error"}` sinon. N'expose aucun détail. |
+
+#### Protection en production
+
+En production, toute requête `/api/**` doit porter l'en-tête `X-Api-Key` (valeur de `API_KEY` du backend), sinon `401`. Le proxy Nitro du frontend l'ajoute ; le navigateur ne la voit jamais. Hors production, si `API_KEY` est absente, la vérification est désactivée.
 
 ---
 
@@ -527,10 +563,15 @@ Le projet repose sur une séparation claire entre :
 
 ### Sécurité
 
+- Aucun secret en dur dans le code ou le dépôt : variables d'environnement uniquement
 - Les mots de passe sont **hashés avec bcrypt** (jamais stockés en clair)
-- Les variables sensibles (clés, mots de passe BDD) sont stockées dans un fichier **`.env`** non versionné
-- Le fichier `.env` est présent dans le `.gitignore`
+- Les variables sensibles sont stockées dans un fichier **`.env`** non versionné, présent dans le `.gitignore`
+- Trois comptes PostgreSQL distincts : `_owner` (migrations, GRANT, bootstrap ; mot de passe uniquement dans l'environnement GitHub `production`), `_app` (DML seul, utilisé par le backend), `_ro` (lecture seule, consultation et sauvegardes)
+- Instance publique protégée : proxy Nitro, HTTP Basic Auth sur le frontend, en-tête `X-Api-Key` exigé par le backend en production (voir section 7)
+- En-têtes de sécurité HTTP et CORS en liste blanche
+- `npm audit` et gitleaks bloquants en CI, dependabot activé
 - Les entrées utilisateur sont **validées et assainies** côté serveur avant traitement
+- Politique détaillée : `docs/SECURITE.md`
 
 ### Maintenabilité
 
@@ -543,6 +584,8 @@ Le projet repose sur une séparation claire entre :
 - L'application doit pouvoir être lancée avec la commande **`docker-compose up`**
 - Les migrations de base de données doivent s'exécuter **automatiquement** au démarrage
 - L'environnement de développement et de production sont séparés via des fichiers `.env` distincts
+- En production, le backend est déployé par un workflow GitHub (`deploy-backend.yml`, SSH/rsync, releases et lien `current`) et le frontend par l'intégration Git de Vercel
+- Les seeders de bootstrap (utilisateur unique, 14 genres) s'exécutent à chaque déploiement
 
 ---
 
@@ -552,17 +595,17 @@ Le projet repose sur une séparation claire entre :
 
 > Objectif : avoir une application fonctionnelle pour un usage personnel solo.
 
-- [ ] Mise en place du projet (Nuxt 3 + AdonisJS + PostgreSQL + Docker)
-- [ ] Création du schéma de base de données et des migrations
-- [ ] API REST : CRUD complet sur les webtoons
-- [ ] API REST : gestion de la liste de lecture
-- [ ] Interface : catalogue (liste + fiche détail)
-- [ ] Interface : formulaires d'ajout et de modification
-- [ ] Interface : liste de lecture avec filtres et statuts
-- [ ] Interface : mise à jour rapide de la progression (+1 chapitre)
-- [ ] Interface : statistiques basiques
-- [ ] Design : intégration de la charte graphique (couleurs, typographies, logo)
-- [ ] Déploiement : configuration Docker Compose complète
+- [x] Mise en place du projet (Nuxt 4 + AdonisJS + PostgreSQL + Docker)
+- [x] Création du schéma de base de données et des migrations
+- [x] API REST : CRUD complet sur les webtoons
+- [x] API REST : gestion de la liste de lecture
+- [x] Interface : catalogue (liste + fiche détail)
+- [x] Interface : formulaires d'ajout et de modification
+- [x] Interface : liste de lecture avec filtres et statuts
+- [x] Interface : mise à jour rapide de la progression (+1 chapitre)
+- [x] Interface : statistiques basiques
+- [x] Design : intégration de la charte graphique (couleurs, typographies, logo)
+- [x] Déploiement : configuration Docker Compose complète
 
 ### Phase 2 — Amélioration (Version 0.2.0)
 
