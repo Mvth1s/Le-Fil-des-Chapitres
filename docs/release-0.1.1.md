@@ -43,6 +43,10 @@ repart d'ici.
 - Lien actif du header : texte en encre (le doré du UI kit n'atteint pas AA sur le crème), V5.
 - Logo du header : pile de livres seule (`logo-icon.png`), le logo carré du UI kit contient un
   texte illisible à 38 px.
+- Statistiques : tuile "En cours" au lieu de "Genres explorés" ; ce nombre n'est pas
+  calculable sans ajouter un champ à `GET /api/stats` (`topGenres` limité à 3). Décision
+  d'API laissée à Mvth1s.
+- Rang des mieux notés en `#8C6E35` (4,78:1) : les ors du UI kit échouent AA, même en grand texte.
 
 (Complété au lot 5.)
 
