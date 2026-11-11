@@ -353,38 +353,6 @@ async function moveFocusAfterRemoval(index: number, title: string) {
   text-underline-offset: var(--space-1);
 }
 
-.stat-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-4);
-  margin: 0;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  background-color: var(--color-surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-}
-
-.stat__value {
-  margin: 0;
-  font-weight: 700;
-  font-size: 32px;
-  line-height: 1;
-}
-
-.stat__label {
-  font-size: var(--fs-small);
-  font-style: italic;
-  letter-spacing: var(--letter-tag);
-  text-transform: uppercase;
-  color: var(--color-text-soft);
-}
-
 .empty {
   display: flex;
   flex-direction: column;
@@ -428,11 +396,6 @@ async function moveFocusAfterRemoval(index: number, title: string) {
 
   .hero__logo {
     display: none;
-  }
-
-  .stat-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
   }
 }
 </style>

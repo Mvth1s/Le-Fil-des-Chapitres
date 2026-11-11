@@ -43,6 +43,10 @@ repart d'ici.
 - Lien actif du header : texte en encre (le doré du UI kit n'atteint pas AA sur le crème), V5.
 - Logo du header : pile de livres seule (`logo-icon.png`), le logo carré du UI kit contient un
   texte illisible à 38 px.
+- Statistiques : tuile "En cours" au lieu de "Genres explorés" ; ce nombre n'est pas
+  calculable sans ajouter un champ à `GET /api/stats` (`topGenres` limité à 3). Décision
+  d'API laissée à Mvth1s.
+- Rang des mieux notés en `#8C6E35` (4,78:1) : les ors du UI kit échouent AA, même en grand texte.
 
 (Complété au lot 5.)
 
@@ -50,3 +54,5 @@ repart d'ici.
 
 - Catalogue : course entre `router.replace` et le watch de `route.query.q` (lot 3.2),
   corrigée au lot 3.4 (`lastQ`).
+- Backend : `StatsController` trie le top noté par `rating` sans critère secondaire (ordre
+  instable à note égale). Hors périmètre UI (lot 3.6).
