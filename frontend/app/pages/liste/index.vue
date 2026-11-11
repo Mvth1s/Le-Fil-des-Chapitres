@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { UserWebtoon, UserWebtoonStatus } from '~/types/user-webtoon'
+import { filterAndSortReadingList, type ReadingListSort } from '~/utils/reading-list'
 
 const apiBase = useApiBase()
 const toast = useToast()
@@ -18,8 +19,30 @@ const statusOptions = Object.entries(STATUS_LABELS).map(([value, label]) => ({ v
 
 const statusFilterOptions = [{ value: '', label: 'Tous les statuts' }, ...statusOptions]
 
-const statusFilter = ref('')
+// Filtrage et tri cote client (liste personnelle, petite) : logique dans
+// utils/reading-list.ts, fonction pure testable.
+const search = ref('')
+const debouncedSearch = useDebouncedRef(search, 300)
+const statusFilter = ref<UserWebtoonStatus | ''>('')
 const genreFilter = ref('')
+// Chaine dans le select ('' = toutes les notes), convertie en nombre pour le filtre.
+const minRatingFilter = ref('')
+const sort = ref<ReadingListSort>('title')
+
+const minRatingOptions = [
+  { value: '', label: 'Toutes les notes' },
+  ...[5, 6, 7, 8, 9].map((n) => ({ value: String(n), label: `${String(n)} et plus` })),
+]
+
+const sortOptions = [
+  { value: 'title', label: 'Titre (A-Z)' },
+  { value: 'title-desc', label: 'Titre (Z-A)' },
+  { value: 'recent', label: "Date d'ajout (plus récent d'abord)" },
+  { value: 'oldest', label: "Date d'ajout (plus ancien d'abord)" },
+  { value: 'rating', label: 'Note (décroissante)' },
+  { value: 'rating-asc', label: 'Note (croissante)' },
+  { value: 'progress', label: 'Progression (%)' },
+]
 
 // Les genres proposes au filtre sont ceux presents dans la liste de
 // l'utilisateur, pas le referentiel complet : inutile de proposer un genre
@@ -34,20 +57,39 @@ const genreFilterOptions = computed(() => {
   return [
     { value: '', label: 'Tous les genres' },
     ...[...seen.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1]))
+      .sort((a, b) => a[1].localeCompare(b[1], 'fr'))
       .map(([value, label]) => ({ value, label })),
   ]
 })
 
-const filteredEntries = computed(() => {
-  return (entries.value ?? []).filter((entry) => {
-    const matchesStatus = statusFilter.value === '' || entry.status === statusFilter.value
-    const matchesGenre =
-      genreFilter.value === '' ||
-      entry.webtoon.genres.some((genre) => genre.id === genreFilter.value)
-    return matchesStatus && matchesGenre
+const filteredEntries = computed(() =>
+  filterAndSortReadingList(entries.value ?? [], {
+    search: debouncedSearch.value,
+    status: statusFilter.value,
+    genreId: genreFilter.value,
+    minRating: minRatingFilter.value === '' ? null : Number(minRatingFilter.value),
+    sort: sort.value,
   })
-})
+)
+
+const hasActiveFilters = computed(
+  () =>
+    !!(
+      search.value ||
+      statusFilter.value ||
+      genreFilter.value ||
+      minRatingFilter.value ||
+      sort.value !== 'title'
+    )
+)
+
+function resetFilters() {
+  search.value = ''
+  statusFilter.value = ''
+  genreFilter.value = ''
+  minRatingFilter.value = ''
+  sort.value = 'title'
+}
 
 // Ids des entrees ayant une requete en vol : une seule requete a la fois par
 // entree (+1, saisie directe, statut, edition), sans bloquer les autres cartes.
@@ -218,13 +260,31 @@ function formatRating(rating: number) {
     </p>
 
     <template v-else>
-      <div class="filters">
+      <section class="filters" aria-label="Recherche, filtres et tri">
+        <AppInput
+          v-model="search"
+          class="filters__search"
+          label="Rechercher (titre ou auteur)"
+          type="search"
+          placeholder="Ex. : Solo Leveling"
+        />
         <AppSelect v-model="statusFilter" label="Statut" :options="statusFilterOptions" />
         <AppSelect v-model="genreFilter" label="Genre" :options="genreFilterOptions" />
+        <AppSelect v-model="minRatingFilter" label="Note minimale" :options="minRatingOptions" />
+        <AppSelect v-model="sort" label="Trier par" :options="sortOptions" />
+      </section>
+
+      <div class="toolbar">
+        <p class="toolbar__count" aria-live="polite">
+          {{ filteredEntries.length }} {{ filteredEntries.length > 1 ? 'webtoons' : 'webtoon' }}
+        </p>
+        <AppButton v-if="hasActiveFilters" variant="ghost" size="sm" @click="resetFilters">
+          Réinitialiser
+        </AppButton>
       </div>
 
       <p v-if="filteredEntries.length === 0" class="text-secondary">
-        Aucun webtoon ne correspond a ce filtre.
+        Aucun webtoon ne correspond à ces critères.
       </p>
 
       <div v-else class="grid">
@@ -375,16 +435,28 @@ function formatRating(rating: number) {
 }
 
 .filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: var(--spacing-md);
   margin-top: var(--spacing-lg);
-  max-width: 480px;
 }
 
-.filters > * {
-  flex: 1;
-  min-width: 180px;
+.filters__search {
+  grid-column: 1 / -1;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.toolbar__count {
+  margin: 0;
+  font-weight: 600;
 }
 
 .grid {
