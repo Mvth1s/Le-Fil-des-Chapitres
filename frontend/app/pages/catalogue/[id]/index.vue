@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Webtoon } from '~/types/webtoon'
+import { USER_WEBTOON_STATUSES, type UserWebtoon, type UserWebtoonStatus } from '~/types/user-webtoon'
 
 const route = useRoute()
 const router = useRouter()
@@ -37,6 +38,49 @@ async function handleDelete() {
     toast.error('La suppression a echoue. Reessaie dans un instant.')
   } finally {
     deleting.value = false
+  }
+}
+
+// Section "Ma liste" (US-05). Meme cle que pages/liste/index.vue : le cache
+// partage reste a jour quand on navigue ensuite vers /liste.
+const {
+  data: listEntries,
+  pending: listPending,
+  error: listError,
+  refresh: refreshList,
+} = await useFetch<UserWebtoon[]>(`${apiBase}/user/list`, { key: 'user-list' })
+
+const listEntry = computed(() =>
+  listEntries.value?.find((entry) => entry.webtoonId === webtoonId)
+)
+
+const statusOptions = USER_WEBTOON_STATUSES.map((value) => ({
+  value,
+  label: STATUS_LABELS[value],
+}))
+const newStatus = ref<UserWebtoonStatus>('plan_to_read')
+const adding = ref(false)
+
+async function handleAddToList() {
+  if (adding.value) return
+  adding.value = true
+  try {
+    await $fetch(`${apiBase}/user/list`, {
+      method: 'POST',
+      body: { webtoonId, status: newStatus.value },
+    })
+    toast.success('Webtoon ajoute a ta liste de lecture.')
+    await refreshList()
+  } catch (error) {
+    if (isAlreadyInListError(error)) {
+      toast.error('Ce webtoon est deja dans ta liste de lecture.')
+      await refreshList()
+    } else {
+      const firstMessage = Object.values(extractValidationErrors(error))[0]
+      toast.error(firstMessage ?? "L'ajout a ta liste a echoue. Reessaie dans un instant.")
+    }
+  } finally {
+    adding.value = false
   }
 }
 </script>
@@ -81,6 +125,25 @@ async function handleDelete() {
       <a v-if="webtoon.link" :href="webtoon.link" target="_blank" rel="noopener">
         <AppButton variant="outline">Lire ce webtoon</AppButton>
       </a>
+
+      <section class="my-list" aria-labelledby="my-list-title">
+        <h2 id="my-list-title">Ma liste</h2>
+        <p v-if="listPending" class="text-secondary">Chargement...</p>
+        <div v-else-if="listError" class="error-box">
+          <p>Impossible de verifier ta liste de lecture pour le moment.</p>
+          <AppButton variant="outline" size="sm" @click="refreshList()">Réessayer</AppButton>
+        </div>
+        <div v-else-if="listEntry" class="my-list__row">
+          <AppBadge :variant="listEntry.status">{{ STATUS_LABELS[listEntry.status] }}</AppBadge>
+          <NuxtLink to="/liste">Voir ma liste</NuxtLink>
+        </div>
+        <form v-else class="my-list__row" @submit.prevent="handleAddToList">
+          <AppSelect v-model="newStatus" label="Statut de lecture" :options="statusOptions" />
+          <AppButton type="submit" :aria-disabled="adding">
+            {{ adding ? 'Ajout...' : 'Ajouter à ma liste' }}
+          </AppButton>
+        </form>
+      </section>
     </article>
 
     <AppModal v-model:open="confirmOpen" :persistent="deleting">
@@ -144,6 +207,19 @@ article {
   flex-wrap: wrap;
   gap: var(--spacing-xs);
   margin: var(--spacing-sm) 0;
+}
+
+.my-list {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.my-list__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .error-box {
