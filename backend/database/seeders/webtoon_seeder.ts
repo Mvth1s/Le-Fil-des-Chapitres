@@ -113,7 +113,7 @@ const WEBTOONS: {
   },
   {
     title: 'Le Cartographe des Lunes',
-    author: 'Ines Morel',
+    author: 'Selenwen',
     description:
       "Une jeune cartographe embarque sur un vaisseau-archive pour dessiner les lunes oubliees d'un empire stellaire en ruine.",
     chaptersTotal: 96,
@@ -131,7 +131,7 @@ const WEBTOONS: {
   },
   {
     title: 'La Brodeuse du Palais',
-    author: 'Clara Vasseur',
+    author: 'Fildor',
     description:
       'A la cour de Joseon, une brodeuse decouvre des messages codes caches dans les robes de la reine.',
     chaptersTotal: 120,
@@ -149,7 +149,7 @@ const WEBTOONS: {
   },
   {
     title: 'Les Matins de la Rue Cerise',
-    author: 'Lea Fontaine',
+    author: 'Cerisaie',
     description:
       'Chaque matin, une boulangerie de quartier voit passer les memes habitues et leurs petites histoires.',
     chaptersTotal: 60,
