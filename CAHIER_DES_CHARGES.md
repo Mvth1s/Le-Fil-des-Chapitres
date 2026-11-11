@@ -595,17 +595,17 @@ En production, toute requête `/api/**` doit porter l'en-tête `X-Api-Key` (vale
 
 > Objectif : avoir une application fonctionnelle pour un usage personnel solo.
 
-- [ ] Mise en place du projet (Nuxt 4 + AdonisJS + PostgreSQL + Docker)
-- [ ] Création du schéma de base de données et des migrations
-- [ ] API REST : CRUD complet sur les webtoons
-- [ ] API REST : gestion de la liste de lecture
-- [ ] Interface : catalogue (liste + fiche détail)
-- [ ] Interface : formulaires d'ajout et de modification
-- [ ] Interface : liste de lecture avec filtres et statuts
-- [ ] Interface : mise à jour rapide de la progression (+1 chapitre)
-- [ ] Interface : statistiques basiques
-- [ ] Design : intégration de la charte graphique (couleurs, typographies, logo)
-- [ ] Déploiement : configuration Docker Compose complète
+- [x] Mise en place du projet (Nuxt 4 + AdonisJS + PostgreSQL + Docker)
+- [x] Création du schéma de base de données et des migrations
+- [x] API REST : CRUD complet sur les webtoons
+- [x] API REST : gestion de la liste de lecture
+- [x] Interface : catalogue (liste + fiche détail)
+- [x] Interface : formulaires d'ajout et de modification
+- [x] Interface : liste de lecture avec filtres et statuts
+- [x] Interface : mise à jour rapide de la progression (+1 chapitre)
+- [x] Interface : statistiques basiques
+- [x] Design : intégration de la charte graphique (couleurs, typographies, logo)
+- [x] Déploiement : configuration Docker Compose complète
 
 ### Phase 2 — Amélioration (Version 0.2.0)
 
