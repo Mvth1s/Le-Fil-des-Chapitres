@@ -11,7 +11,12 @@ const apiBase = useApiBase()
 const [
   { data: stats, pending, error, refresh },
   { data: entries, error: listError, refresh: refreshList },
-  { data: webtoons, error: webtoonsError, refresh: refreshWebtoons },
+  {
+    data: webtoons,
+    pending: webtoonsPending,
+    error: webtoonsError,
+    refresh: refreshWebtoons,
+  },
 ] = await Promise.all([
   useFetch<Stats>(`${apiBase}/stats`, { key: 'stats' }),
   useFetch<UserWebtoon[]>(`${apiBase}/user/list`, { key: 'user-list' }),
@@ -103,10 +108,12 @@ async function moveFocusAfterRemoval(index: number, title: string) {
 
 <template>
   <main class="page">
+    <!-- h1 de secours : une fois charge, le titre du hero est le seul h1. -->
+    <h1 v-if="pending || error || !stats" class="sr-only">Le Fil des Chapitres</h1>
+
     <p v-if="pending" class="text-secondary">Chargement...</p>
 
     <div v-else-if="error" class="error-box">
-      <h1>Le Fil des Chapitres</h1>
       <p>Impossible de charger le tableau de bord pour le moment.</p>
       <AppButton variant="outline" size="sm" @click="refresh()">Réessayer</AppButton>
     </div>
@@ -214,37 +221,40 @@ async function moveFocusAfterRemoval(index: number, title: string) {
           </div>
         </dl>
       </section>
-
-      <section class="section" aria-labelledby="recent-title">
-        <div class="section__head">
-          <h2 id="recent-title" class="section__title">Récemment ajoutés au catalogue</h2>
-          <NuxtLink v-if="recentItems.length > 0" to="/catalogue" class="section__link">
-            Voir le catalogue →
-          </NuxtLink>
-        </div>
-
-        <div v-if="webtoonsError" class="error-box">
-          <p>Impossible de charger le catalogue pour le moment.</p>
-          <AppButton variant="outline" size="sm" @click="refreshWebtoons()">Réessayer</AppButton>
-        </div>
-
-        <div v-else-if="recentItems.length > 0" class="wt-grid">
-          <WebtoonCard
-            v-for="item in recentItems"
-            :key="item.id"
-            :item="item"
-            :busy="pendingIds.has(item.id)"
-            @increment="'webtoon' in item && handleIncrement(item)"
-          />
-        </div>
-
-        <div v-else class="empty">
-          <h3>Le catalogue est vide</h3>
-          <p>Ajoute un premier webtoon pour commencer à construire ta bibliothèque.</p>
-          <AppButton to="/catalogue/new" variant="outline" size="sm">Ajouter un webtoon</AppButton>
-        </div>
-      </section>
     </template>
+
+    <!-- Hors de la branche stats : le catalogue s'affiche meme si /stats echoue. -->
+    <section class="section" aria-labelledby="recent-title">
+      <div class="section__head">
+        <h2 id="recent-title" class="section__title">Récemment ajoutés au catalogue</h2>
+        <NuxtLink v-if="recentItems.length > 0" to="/catalogue" class="section__link">
+          Voir le catalogue →
+        </NuxtLink>
+      </div>
+
+      <p v-if="webtoonsPending" class="text-secondary">Chargement du catalogue...</p>
+
+      <div v-else-if="webtoonsError" class="error-box">
+        <p>Impossible de charger le catalogue pour le moment.</p>
+        <AppButton variant="outline" size="sm" @click="refreshWebtoons()">Réessayer</AppButton>
+      </div>
+
+      <div v-else-if="recentItems.length > 0" class="wt-grid">
+        <WebtoonCard
+          v-for="item in recentItems"
+          :key="item.id"
+          :item="item"
+          :busy="pendingIds.has(item.id)"
+          @increment="'webtoon' in item && handleIncrement(item)"
+        />
+      </div>
+
+      <div v-else class="empty">
+        <h3>Le catalogue est vide</h3>
+        <p>Ajoute un premier webtoon pour commencer à construire ta bibliothèque.</p>
+        <AppButton to="/catalogue/new" variant="outline" size="sm">Ajouter un webtoon</AppButton>
+      </div>
+    </section>
   </main>
 </template>
 
@@ -253,9 +263,9 @@ async function moveFocusAfterRemoval(index: number, title: string) {
 .hero {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 36px;
-  margin-bottom: 36px;
-  padding: 36px 36px 32px;
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+  padding: var(--space-6);
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -292,8 +302,8 @@ async function moveFocusAfterRemoval(index: number, title: string) {
 .hero__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 
 /* Bouton dore, texte encre (V5) : 5.03:1. `.hero` en prefixe pour l'emporter
@@ -316,8 +326,8 @@ async function moveFocusAfterRemoval(index: number, title: string) {
 .section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-bottom: 48px;
+  gap: var(--space-5);
+  margin-bottom: var(--space-7);
 }
 
 .section__head {
@@ -330,7 +340,7 @@ async function moveFocusAfterRemoval(index: number, title: string) {
 
 .section__title {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--fs-h2);
 }
 
 /* Le dore du UI kit en texte (~2.6:1) echoue : texte encre, dore en soulignement. */
@@ -340,21 +350,21 @@ async function moveFocusAfterRemoval(index: number, title: string) {
   color: var(--color-text);
   text-decoration: underline;
   text-decoration-color: var(--color-accent);
-  text-underline-offset: 4px;
+  text-underline-offset: var(--space-1);
 }
 
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  gap: var(--space-4);
   margin: 0;
 }
 
 .stat {
   display: flex;
   flex-direction: column-reverse;
-  gap: 6px;
-  padding: 20px 22px;
+  gap: var(--space-2);
+  padding: var(--space-5);
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
@@ -370,7 +380,7 @@ async function moveFocusAfterRemoval(index: number, title: string) {
 .stat__label {
   font-size: var(--fs-small);
   font-style: italic;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--letter-tag);
   text-transform: uppercase;
   color: var(--color-text-soft);
 }
@@ -389,7 +399,7 @@ async function moveFocusAfterRemoval(index: number, title: string) {
 
 .empty h3 {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--fs-h3);
 }
 
 .empty p {
