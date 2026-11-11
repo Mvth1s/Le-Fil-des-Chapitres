@@ -196,13 +196,18 @@ le-fil-des-chapitres/
 
 ## 🗺️ Roadmap
 
-### Phase 1 : MVP `v0.1.0` *(code livré, mise en ligne à exécuter : voir [Déploiement](docs/DEPLOIEMENT.md))*
+### Phase 1 : MVP *(livrée : `v0.1.0` fonctionnel, puis `v0.1.1` refonte visuelle)*
 - [x] Mise en place du projet et de l'environnement Docker
 - [x] Schéma de base de données et migrations
 - [x] API REST complète (webtoons, liste de lecture, genres)
 - [x] Interface : catalogue, fiche webtoon, liste de lecture
 - [x] Interface : statistiques basiques
 - [x] Intégration de la charte graphique
+- [ ] Mise en ligne (étape 11) : voir [Déploiement](docs/DEPLOIEMENT.md)
+
+Deux petits points restent ouverts :
+- Tuile « Genres explorés » du UI kit : remplacée par « En cours », car `GET /api/stats` ne renvoie que le top 3 des genres. Il faudrait ajouter un champ à l'API.
+- `cover_url` : le backend accepte `http` et `https`, mais la CSP bloque `http`. À restreindre aux URL `https`.
 
 ### Phase 2 — Améliorations `v0.2.0`
 - [ ] Import / Export CSV ou JSON

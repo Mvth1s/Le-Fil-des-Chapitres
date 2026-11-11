@@ -13,7 +13,7 @@ et une liste de lecture individuelle avec progression, statuts et statistiques.
 Double objectif : outil réellement utilisé au quotidien, et support d'apprentissage de la stack.
 
 **Auteur unique et utilisateur unique :** Mvth1s (développeur junior).
-Licence MIT. Version courante : 0.1.0 (en développement).
+Licence MIT. Version courante : 0.1.1.
 
 ---
 
@@ -143,7 +143,7 @@ Toute modification de cette liste doit être répercutée dans `CAHIER_DES_CHARG
 
 Style : minimaliste, doux, éditorial, chaleureux.
 
-**Polices** (Google Fonts) :
+**Polices** (auto-hébergées dans `frontend/public/fonts`, servies depuis `/fonts`, plus de Google Fonts) :
 - Dancing Script : logo, navbar, grands titres (H1)
 - Playfair Display : titres de section, cartes, corps de texte, badges
 
@@ -168,8 +168,21 @@ Ne jamais introduire une couleur ou une police hors de cette liste sans validati
 
 ## 9. Git
 
-**Branches :** `main` (stable) et `dev` (intégration). Jamais de commit direct sur `main`.
+**Branches :** seules `main` (stable) et `dev` (intégration) sont permanentes, en local comme
+sur GitHub. Jamais de commit direct sur `main`. Les branches de travail partent de `dev`,
+reviennent par PR vers `dev` et sont supprimées après fusion (suppression automatique activée
+sur GitHub).
 Préfixes : `feature/`, `fix/`, `style/`, `chore/`, `refactor/`, `deploy/`.
+
+**Release :** PR `dev` -> `main` fusionnée en squash (imposé par l'historique linéaire de
+`main`), puis PR de resynchronisation `main` -> `dev` pour que `dev` contienne le commit de
+release.
+
+**Dependabot** (`.github/dependabot.yml`) : mises à jour de version mensuelles, ciblant `dev`,
+un groupe mineures + correctifs par dossier, majeures npm ignorées (faites à la main),
+majeures des actions regroupées, délai de 14 jours après publication, 2 PR ouvertes au plus.
+Les mises à jour de sécurité ne suivent pas ces règles et ciblent `main` : après une telle
+PR, resynchroniser `main` vers `dev`.
 
 **Commits :** `type: description courte en minuscules`
 Types : `feat`, `fix`, `chore`, `style`, `refactor`, `docs`, `test`, `deploy`.
