@@ -10,27 +10,24 @@ import {
 } from '~/utils/catalogue'
 
 const apiBase = useApiBase()
-const {
-  data: webtoons,
-  pending,
-  error,
-  refresh,
-} = await useFetch<Webtoon[]>(`${apiBase}/webtoons`, {
-  // Cle explicite : par defaut useFetch derive sa cle de l'URL, or l'URL
-  // differe entre le SSR (apiBaseServer, reseau Docker interne) et le
-  // navigateur (apiBase public) - voir useApiBase(). Sans cle stable, le
-  // client ne retrouve jamais les donnees transferees par le SSR sous la
-  // meme cle, refait l'appel de zero, et desynchronise pending/data entre
-  // le rendu serveur et l'hydratation (erreur "Hydration node mismatch").
-  key: 'webtoons-list',
-})
-
-// Statut de lecture par webtoon, pour le filtre "statut". Un echec de cet
-// appel ne bloque pas le catalogue : seul le filtre de statut est desactive.
-const { data: entries, error: listError } = await useFetch<UserWebtoon[]>(
-  `${apiBase}/user/list`,
-  { key: 'user-list' }
-)
+// Les deux appels sont lances en parallele (Promise.all) plutot qu'en serie.
+const [
+  { data: webtoons, pending, error, refresh },
+  // Statut de lecture par webtoon, pour le filtre "statut". Un echec de cet
+  // appel ne bloque pas le catalogue : seul le filtre de statut est desactive.
+  { data: entries, error: listError },
+] = await Promise.all([
+  useFetch<Webtoon[]>(`${apiBase}/webtoons`, {
+    // Cle explicite : par defaut useFetch derive sa cle de l'URL, or l'URL
+    // differe entre le SSR (apiBaseServer, reseau Docker interne) et le
+    // navigateur (apiBase public) - voir useApiBase(). Sans cle stable, le
+    // client ne retrouve jamais les donnees transferees par le SSR sous la
+    // meme cle, refait l'appel de zero, et desynchronise pending/data entre
+    // le rendu serveur et l'hydratation (erreur "Hydration node mismatch").
+    key: 'webtoons-list',
+  }),
+  useFetch<UserWebtoon[]>(`${apiBase}/user/list`, { key: 'user-list' }),
+])
 const statusByWebtoonId = computed(
   () => new Map((entries.value ?? []).map((entry) => [entry.webtoonId, entry.status]))
 )
@@ -151,7 +148,7 @@ function setView(next: 'grid' | 'list') {
         <AppSelect v-model="author" label="Auteur" :options="authorOptions" />
         <AppSelect v-model="sort" label="Trier par" :options="sortOptions" />
       </section>
-      <p v-if="listError" class="text-secondary">
+      <p v-if="listError" class="text-secondary" role="status">
         Liste de lecture indisponible : le filtre par statut est désactivé.
       </p>
 
@@ -217,7 +214,13 @@ function setView(next: 'grid' | 'list') {
         </NuxtLink>
       </div>
 
-      <div v-else class="table-wrapper">
+      <div
+        v-else
+        class="table-wrapper"
+        tabindex="0"
+        role="region"
+        aria-label="Catalogue en liste"
+      >
         <table class="table">
           <thead>
             <tr>

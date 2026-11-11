@@ -48,16 +48,20 @@ export function filterAndSortWebtoons(
   })
 
   // slice() : sort() trie en place, on ne modifie pas le tableau d'entree.
+  const byTitle = (a: Webtoon, b: Webtoon) =>
+    a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' })
+
+  // En cas d'egalite sur le critere principal, on departage par titre.
   return filtered.slice().sort((a, b) => {
     if (criteria.sort === 'recent') {
-      return b.createdAt.localeCompare(a.createdAt)
+      return b.createdAt.localeCompare(a.createdAt) || byTitle(a, b)
     }
     if (criteria.sort === 'chapters') {
       // null en fin de liste, puis ordre decroissant (les plus longs d'abord).
-      if (a.chaptersTotal === null) return b.chaptersTotal === null ? 0 : 1
+      if (a.chaptersTotal === null) return b.chaptersTotal === null ? byTitle(a, b) : 1
       if (b.chaptersTotal === null) return -1
-      return b.chaptersTotal - a.chaptersTotal
+      return b.chaptersTotal - a.chaptersTotal || byTitle(a, b)
     }
-    return a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' })
+    return byTitle(a, b)
   })
 }
