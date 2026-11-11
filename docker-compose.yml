@@ -6,7 +6,8 @@
 # versionne), lu automatiquement par docker compose pour l'interpolation des
 # ${...}. Premier lancement : "cp .env.example .env", remplacer chaque
 # marqueur, puis "docker compose up". La syntaxe ${VAR:?message} fait echouer
-# compose avec un message clair si une variable manque.
+# compose avec un message clair si une variable manque ; ${VAR:-} marque une
+# variable facultative (vide par defaut).
 
 services:
   postgres:
@@ -65,6 +66,9 @@ services:
       # Compte des migrations (connexion Lucid "migration") : proprietaire.
       DB_MIGRATION_USER: lfdc_owner
       DB_MIGRATION_PASSWORD: ${DB_OWNER_PASSWORD:?DB_OWNER_PASSWORD manquant dans .env (voir .env.example)}
+      # Facultatif en local : vide = /api ouvert sans en-tete X-Api-Key.
+      # Renseigne dans .env, le frontend envoie la meme valeur (NUXT_API_KEY).
+      API_KEY: ${API_KEY:-}
     # Au demarrage, dans l'ordre :
     #   1. migrations en lfdc_owner (seul compte autorise a modifier le schema),
     #   2. seeders en lfdc_app (ils ne font que du DML, idempotents),
@@ -76,6 +80,8 @@ services:
       - -c
       - node ace migration:run --connection=migration && node ace db:seed && exec node ace serve --hmr
     ports:
+      # Publie pour les tests manuels de l'API (Postman, curl) ; le navigateur,
+      # lui, passe par le proxy du frontend.
       - '3333:3333'
     volumes:
       # :Z relabelle le contenu monte avec le contexte SELinux attendu par
@@ -94,10 +100,16 @@ services:
     build: ./frontend
     restart: unless-stopped
     environment:
-      # URL vue par le navigateur (hote).
-      NUXT_PUBLIC_API_BASE: http://localhost:3333/api
-      # URL utilisee cote serveur (SSR), via le reseau Docker interne.
-      NUXT_API_BASE_SERVER: http://backend:3333/api
+      # Le navigateur ne parle qu'a Nuxt : le proxy Nitro (server/api) relaie
+      # /api/** vers le backend par le reseau Docker interne.
+      NUXT_API_UPSTREAM: http://backend:3333/api
+      # Meme valeur que l'API_KEY du backend, ajoutee par le proxy dans
+      # l'en-tete X-Api-Key. Vide par defaut : cle desactivee en dev.
+      NUXT_API_KEY: ${API_KEY:-}
+      # Basic Auth devant tout le frontend. Vides par defaut : desactivee en
+      # dev (obligatoire en production, sur Vercel).
+      NUXT_BASIC_AUTH_USER: ${NUXT_BASIC_AUTH_USER:-}
+      NUXT_BASIC_AUTH_PASSWORD: ${NUXT_BASIC_AUTH_PASSWORD:-}
     ports:
       - '3000:3000'
     volumes:
