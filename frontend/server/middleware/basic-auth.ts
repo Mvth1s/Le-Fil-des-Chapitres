@@ -20,7 +20,7 @@ export default defineEventHandler((event) => {
   if (!basicAuthUser && !basicAuthPassword) return
 
   const header = getRequestHeader(event, 'authorization') ?? ''
-  const decoded = header.startsWith('Basic ')
+  const decoded = /^basic /i.test(header) // schema HTTP insensible a la casse (RFC 9110)
     ? Buffer.from(header.slice(6), 'base64').toString('utf8')
     : ''
   const separator = decoded.indexOf(':')

@@ -74,6 +74,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 20
+    # "shell: bash" explicite = "bash --noprofile --norc -eo pipefail" : sans
+    # lui, GitHub lance "bash -e" SANS pipefail et un echec distant suivi de
+    # "| tee" passerait inapercu (run vert, current non bascule). Vaut pour
+    # tous les steps "run:" du job (plusieurs contiennent un pipe).
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Check deployment secrets
         id: check
@@ -117,8 +124,12 @@ jobs:
           fi
           # Ces valeurs sont recopiees dans des commandes distantes et des
           # URL : on refuse tout caractere qui pourrait les detourner.
-          [[ "$ALWAYSDATA_APP_DIR" =~ ^/[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)+$ ]] \
-            || { echo "::error::ALWAYSDATA_APP_DIR doit etre un chemin absolu simple (ex. /home/<compte>/lfdc)"; exit 1; }
+          # Composants "." et ".." refuses : pas de sortie du repertoire prevu.
+          if ! [[ "$ALWAYSDATA_APP_DIR" =~ ^/[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)+$ ]] \
+            || [[ "/$ALWAYSDATA_APP_DIR/" =~ /\.\.?/ ]]; then
+            echo "::error::ALWAYSDATA_APP_DIR doit etre un chemin absolu simple (ex. /home/<compte>/lfdc)"
+            exit 1
+          fi
           [[ "$ALWAYSDATA_SITE_ID" =~ ^[0-9]+$ ]] \
             || { echo "::error::ALWAYSDATA_SITE_ID doit etre numerique"; exit 1; }
           [[ "$ALWAYSDATA_ACCOUNT" =~ ^[A-Za-z0-9_-]+$ ]] \
@@ -295,11 +306,14 @@ jobs:
             mv -T "$app_dir/current.tmp" "$app_dir/current"
             touch "$release_dir"
 
-            # 5. Quota disque de 1 Go (base comprise) : on garde la release
-            # en service et la precedente (rollback), les autres partent.
-            cd "$app_dir/releases"
-            ls -1t | tail -n +3 | while read -r old; do
-              [ "$app_dir/releases/$old" = "$release_dir" ] && continue
+            # 5. Quota disque de 1 Go (base comprise) : on ne garde que la
+            # release en service et la cible precedente de current (rollback).
+            # Pas de tri par date : une release recente mais echouee (jamais
+            # basculee) serait gardee a la place de la release de repli.
+            for old_dir in "${app_dir:?}"/releases/*/; do
+              old=$(basename "$old_dir")
+              [ "$old" = "$release" ] && continue
+              [ -n "$previous" ] && [ "$old" = "${previous##*/}" ] && continue
               rm -rf -- "${app_dir:?}/releases/$old"
             done
           }
