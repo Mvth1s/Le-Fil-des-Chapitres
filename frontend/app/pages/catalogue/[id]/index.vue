@@ -134,8 +134,14 @@ async function handleAddToList() {
             {{ webtoon.chaptersTotal }} chapitres au total
           </p>
 
-          <a v-if="webtoon.link" :href="webtoon.link" target="_blank" rel="noopener">
-            <AppButton variant="outline">Lire ce webtoon</AppButton>
+          <a
+            v-if="webtoon.link"
+            :href="webtoon.link"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="link-button"
+          >
+            Lire ce webtoon
           </a>
         </div>
       </div>
@@ -239,6 +245,30 @@ article {
 
 .article-info > p:first-child {
   margin-top: 0;
+}
+
+/* Meme rendu que AppButton outline/md, sans imbriquer un bouton dans un lien. */
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-family: var(--font-body);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  transition: opacity 0.15s ease;
+}
+
+.link-button:hover {
+  opacity: 0.85;
+}
+
+.link-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .description {

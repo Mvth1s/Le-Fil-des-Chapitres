@@ -23,28 +23,31 @@ watch(
 // En SSR, l'image peut echouer avant l'hydratation, donc avant que @error ne
 // soit branche : on verifie son etat au montage (complete + largeur nulle =
 // image cassee ; une image lazy pas encore chargee n'est pas "complete").
+// shortcut: faux positif possible (SVG sans dimensions intrinseques sous
+// Firefox) si l'echec survient avant l'hydratation ; passer a un rendu client
+// seul de l'img si cela gene.
 onMounted(() => {
   if (img.value?.complete && img.value.naturalWidth === 0) failed.value = true
 })
 
-const label = computed(() => `Couverture de ${props.title}`)
 const initials = computed(() =>
   props.title
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
+    .map((word) => (Array.from(word)[0] ?? '').toUpperCase())
     .join('')
 )
 </script>
 
 <template>
+  <!-- Decoratif : le titre est toujours affiche a cote (et annonce par le lien de la carte). -->
   <div class="app-cover">
     <img
       v-if="src && !failed"
       ref="img"
       :src="src"
-      :alt="label"
+      alt=""
       width="200"
       height="300"
       loading="lazy"
@@ -53,9 +56,7 @@ const initials = computed(() =>
       class="app-cover__img"
       @error="failed = true"
     >
-    <div v-else class="app-cover__fallback" role="img" :aria-label="label">
-      <span aria-hidden="true">{{ initials }}</span>
-    </div>
+    <div v-else class="app-cover__fallback" aria-hidden="true">{{ initials }}</div>
   </div>
 </template>
 
