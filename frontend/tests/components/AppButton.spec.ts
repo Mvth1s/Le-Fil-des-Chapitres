@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import AppButton from '~/components/AppButton.vue'
 
 describe('AppButton', () => {
@@ -24,5 +25,41 @@ describe('AppButton', () => {
     const wrapper = mount(AppButton, { props: { disabled: true } })
     await wrapper.trigger('click')
     expect(wrapper.emitted('click')).toBeUndefined()
+  })
+
+  it('rend un <button type="button"> par defaut', () => {
+    const wrapper = mount(AppButton)
+    expect(wrapper.element).toBeInstanceOf(HTMLButtonElement)
+    expect(wrapper.attributes('type')).toBe('button')
+  })
+
+  // NuxtLink a besoin du routeur Nuxt : mountSuspended le fournit.
+  it('rend un lien interne quand to est fourni', async () => {
+    const wrapper = await mountSuspended(AppButton, { props: { to: '/catalogue', variant: 'ghost' } })
+    expect(wrapper.element).toBeInstanceOf(HTMLAnchorElement)
+    expect(wrapper.attributes('href')).toBe('/catalogue')
+    expect(wrapper.attributes('target')).toBeUndefined()
+    expect(wrapper.attributes('type')).toBeUndefined()
+    expect(wrapper.attributes('disabled')).toBeUndefined()
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['app-button', 'is-ghost', 'is-md']))
+  })
+
+  it('rend un lien externe securise quand href est fourni', () => {
+    const wrapper = mount(AppButton, { props: { href: 'https://example.com', size: 'sm' } })
+    expect(wrapper.element).toBeInstanceOf(HTMLAnchorElement)
+    expect(wrapper.attributes()).toMatchObject({
+      href: 'https://example.com',
+      target: '_blank',
+      rel: 'noopener noreferrer',
+    })
+    expect(wrapper.attributes('type')).toBeUndefined()
+    expect(wrapper.attributes('disabled')).toBeUndefined()
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['app-button', 'is-primary', 'is-sm']))
+  })
+
+  it('donne la priorite a to sur href', async () => {
+    const wrapper = await mountSuspended(AppButton, { props: { to: '/catalogue', href: 'https://example.com' } })
+    expect(wrapper.attributes('href')).toBe('/catalogue')
+    expect(wrapper.attributes('target')).toBeUndefined()
   })
 })

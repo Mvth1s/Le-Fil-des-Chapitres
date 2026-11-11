@@ -4,7 +4,7 @@ import AppCover from '~/components/AppCover.vue'
 
 const URL = 'https://example.com/cover.jpg'
 
-const FALLBACK = 'div.app-cover__fallback[role="img"]'
+const FALLBACK = 'div.app-cover__fallback'
 
 describe('AppCover', () => {
   it.each([null, '', undefined])('affiche le repli quand src vaut %s', (src) => {
@@ -12,7 +12,10 @@ describe('AppCover', () => {
     expect(wrapper.find('img').exists()).toBe(false)
     const div = wrapper.find(FALLBACK)
     expect(div.exists()).toBe(true)
-    expect(div.attributes('aria-label')).toBe('Couverture de Tower of God')
+    // Decoratif : le titre est deja lu a cote, la couverture est masquee.
+    expect(div.attributes('aria-hidden')).toBe('true')
+    expect(div.attributes('role')).toBeUndefined()
+    expect(div.attributes('aria-label')).toBeUndefined()
     expect(div.text()).toBe('TO')
   })
 
@@ -22,18 +25,19 @@ describe('AppCover', () => {
     ['Omniscient', 'O'],
     ['éclat de lune', 'ÉD'],
     ['  lore   olympus ', 'LO'],
+    ['\u{1F525}fire force', '\u{1F525}F'],
   ])('calcule les initiales de "%s" => "%s"', (title, expected) => {
     const wrapper = mount(AppCover, { props: { src: null, title } })
     expect(wrapper.find(FALLBACK).text()).toBe(expected)
   })
 
-  it('affiche une image accessible et legere quand src est valide', () => {
+  it('affiche une image decorative et legere quand src est valide', () => {
     const wrapper = mount(AppCover, { props: { src: URL, title: 'Tower of God' } })
     const img = wrapper.find('img.app-cover__img')
     expect(img.exists()).toBe(true)
     expect(img.attributes()).toMatchObject({
       src: URL,
-      alt: 'Couverture de Tower of God',
+      alt: '',
       loading: 'lazy',
       decoding: 'async',
       referrerpolicy: 'no-referrer',
