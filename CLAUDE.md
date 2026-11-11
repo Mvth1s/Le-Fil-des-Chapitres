@@ -181,9 +181,12 @@ release.
 **Dependabot** (`.github/dependabot.yml`) : mises à jour de version mensuelles, ciblant `dev`,
 un groupe mineures + correctifs par dossier, majeures npm ignorées (faites à la main),
 majeures des actions regroupées, délai de 14 jours après publication, 2 PR ouvertes au plus.
-Les mises à jour de sécurité (réglage de dépôt, désactivé au 2026-11-11) ne suivent pas ces
-règles et ciblent `main` : si elles sont activées, relire une telle PR comme une release,
-puis resynchroniser `main` vers `dev`.
+`vue-tsc` est épinglé en exact (3.3.11) et ignoré de 3.3.12 à 3.4 exclu (faux positifs
+de typecheck sur `design-system.vue`).
+Les mises à jour de sécurité (réglage de dépôt, actif depuis le 2026-11-11, avec les alertes
+de vulnérabilité) ne suivent pas ces règles et ouvrent leurs PR sur `main`. Elles se traitent
+en hotfix : CI verte, fusion en squash, puis resynchronisation `main` -> `dev`. L'ouverture de
+la PR ne déclenche aucun déploiement ; seule la fusion sur `main` le fait.
 
 **Commits :** `type: description courte en minuscules`
 Types : `feat`, `fix`, `chore`, `style`, `refactor`, `docs`, `test`, `deploy`.

@@ -1,8 +1,11 @@
 # Mises a jour automatiques des dependances : une PR groupee par mois et par
 # dossier, ouverte sur dev pour passer par la CI avant d'arriver sur main.
-# Avec target-branch, ces options ne s'appliquent plus aux mises a jour de
-# securite : celles-ci sont un reglage du depot (desactive au 2026-11-11) et,
-# si elles sont activees, ciblent main sans suivre ces regles.
+# Mises a jour de securite : actives depuis le 2026-11-11 (alertes de
+# vulnerabilite et Dependabot security updates, reglage du depot). Avec
+# target-branch, elles ne suivent pas les regles de ce fichier et ouvrent
+# leurs PR sur main. Une telle PR se traite en hotfix : CI verte, fusion en
+# squash, puis resynchronisation main -> dev. L'ouverture de la PR ne
+# declenche aucun deploiement, seule la fusion sur main le fait.
 version: 2
 updates:
   # Backend : mineures et correctifs regroupes, majeures ignorees (a faire a
@@ -48,6 +51,11 @@ updates:
       - dependency-name: "*"
         update-types:
           - version-update:semver-major
+      # vue-tsc 3.3.12 a 3.3.14 signale de fausses erreurs TS2339 sur les
+      # handlers inline de design-system.vue : version epinglee en exact a
+      # 3.3.11, a reevaluer pour 3.4.
+      - dependency-name: "vue-tsc"
+        versions: [">=3.3.12 <3.4.0"]
     open-pull-requests-limit: 2
 
   # Actions GitHub epinglees par SHA dans .github/workflows : Dependabot met
