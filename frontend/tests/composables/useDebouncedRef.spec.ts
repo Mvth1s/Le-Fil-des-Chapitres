@@ -49,4 +49,30 @@ describe('useDebouncedRef', () => {
     expect(debounced.value).toBe('')
     expect(vi.getTimerCount()).toBe(0)
   })
+
+  it('applique une chaine vide immediatement et annule le timer en attente', async () => {
+    const { scope, source, debounced } = setup()
+    source.value = 'abc'
+    await nextTick()
+    vi.advanceTimersByTime(300)
+    expect(debounced.value).toBe('abc')
+
+    source.value = 'abcd'
+    await nextTick()
+    source.value = ''
+    await nextTick()
+    expect(debounced.value).toBe('')
+    expect(vi.getTimerCount()).toBe(0)
+    vi.advanceTimersByTime(1000)
+    expect(debounced.value).toBe('')
+
+    // Une valeur non vide reprend le delai normal.
+    source.value = 'x'
+    await nextTick()
+    vi.advanceTimersByTime(299)
+    expect(debounced.value).toBe('')
+    vi.advanceTimersByTime(1)
+    expect(debounced.value).toBe('x')
+    scope.stop()
+  })
 })

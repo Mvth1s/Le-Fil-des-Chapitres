@@ -110,6 +110,22 @@ describe('filterAndSortWebtoons', () => {
     expect(run({ sort: 'chapters' }, [b, a, n, c])).toEqual(['c', 'a', 'b', 'n'])
   })
 
+  it('departage par titre les egalites du tri recent', () => {
+    const date = '2026-05-01T00:00:00.000Z'
+    const z = webtoon({ id: 'z', title: 'Zinnia', createdAt: date })
+    const e = webtoon({ id: 'e', title: 'Écho', createdAt: date })
+    const f = webtoon({ id: 'f', title: 'Fable', createdAt: date })
+    expect(run({ sort: 'recent' }, [z, f, e])).toEqual(['e', 'f', 'z'])
+  })
+
+  it('departage par titre les egalites du tri chapters, y compris entre null', () => {
+    const z = webtoon({ id: 'z', title: 'Zinnia', chaptersTotal: 10 })
+    const e = webtoon({ id: 'e', title: 'Écho', chaptersTotal: 10 })
+    const zn = webtoon({ id: 'zn', title: 'Zeste', chaptersTotal: null })
+    const en = webtoon({ id: 'en', title: 'Étoile', chaptersTotal: null })
+    expect(run({ sort: 'chapters' }, [zn, z, en, e])).toEqual(['e', 'z', 'en', 'zn'])
+  })
+
   it('ne modifie pas le tableau d entree', () => {
     const input = [a, b, c]
     run({ sort: 'recent', genreId: 'g1' }, input)
