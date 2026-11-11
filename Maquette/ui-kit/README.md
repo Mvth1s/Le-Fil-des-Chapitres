@@ -15,12 +15,13 @@ supprimé du dépôt ; il reste consultable dans l'historique Git.
 | `nav.jsx` | Header : logo, liens avec soulignement doré, recherche globale |
 | `home.jsx`, `catalogue.jsx`, `my-list.jsx`, `stats.jsx` | Les quatre pages |
 | `app.jsx` | Routage et état de démonstration |
-| `template.html` | Page hôte d'origine (React et Babel retirés : référence en lecture, non exécutable telle quelle) |
+| `template.html` | Page hôte d'origine (React et Babel retirés : référence en lecture ; pour l'ouvrir, il faut fournir React 18 et Babel standalone) |
 | `assets/` | Logo carré et favicon du bundle |
 | `captures/` | Captures de la maquette validée (accueil, catalogue, liste, stats) |
 
 Les polices TTF du bundle n'ont pas été conservées : l'application auto-héberge les woff2
-(décision V6), et `tokens-and-styles.css` pointe vers ces fichiers.
+(décision V6), et `tokens-and-styles.css` pointe vers ces fichiers, ajoutés dans
+`frontend/public/fonts/` au lot 2.
 
 ## Ce qui prime sur le UI kit
 

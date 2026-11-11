@@ -25,6 +25,10 @@ repart d'ici.
   sources extraites, mais reste dans l'historique Git du fichier
   `Maquette/Le Fil des Chapitres - UI Kit.html` (ajouté au commit `d7bb545`, PR #2).
   L'historique n'est pas réécrit.
+- Les commits créés par GitHub à la fusion d'une PR (merge ou squash) prennent le nom
+  affiché et l'adresse du compte GitHub, soit le nom réel (déjà le cas pour #27, #28,
+  #29, #30). À régler par Mvth1s dans les paramètres GitHub (nom de profil, adresse
+  privée noreply) ; pas de réécriture de `main`. Signalé par l'audit du lot 1.
 
 ## Écarts au UI kit
 
