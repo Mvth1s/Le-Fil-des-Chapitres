@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { countLabel, formatCount, greetingFor, readingCountLine } from '~/utils/home'
 
-// Intl fr-FR separe les milliers par une espace fine insecable (U+202F).
-const NNBSP = ' '
+// formatCount remplace l'espace fine U+202F d'Intl (absente de Playfair Display) par U+00A0.
+const NNBSP = '\u00A0'
 
 describe('formatCount', () => {
-  it('separe les milliers par U+202F', () => {
+  it('separe les milliers par une espace insecable U+00A0', () => {
     expect(formatCount(12345)).toBe(`12${NNBSP}345`)
   })
 

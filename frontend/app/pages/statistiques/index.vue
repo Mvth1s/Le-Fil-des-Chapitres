@@ -169,10 +169,18 @@ const genres = computed(() => (stats.value ? genreBars(stats.value.topGenres) : 
   list-style: none;
 }
 
-/* .bar-row du UI kit : libelle, piste, valeur. */
-.bar {
+/* .bar-row du UI kit : libelle, piste, valeur. Les colonnes sont portees par
+   la liste et partagees par subgrid : la colonne de valeur prend la largeur
+   de la plus longue valeur, donc toutes les pistes ont la meme longueur. */
+.bars {
   display: grid;
   grid-template-columns: 140px minmax(0, 1fr) auto;
+}
+
+.bar {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) 0;
@@ -209,6 +217,7 @@ const genres = computed(() => (stats.value ? genreBars(stats.value.topGenres) : 
   font-size: var(--fs-small);
   font-style: italic;
   color: var(--color-text-soft);
+  font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
 }
@@ -317,6 +326,10 @@ const genres = computed(() => (stats.value ? genreBars(stats.value.topGenres) : 
   .rated,
   .section__empty {
     padding: var(--space-3) var(--space-4);
+  }
+
+  .bars {
+    display: block;
   }
 
   .bar {
