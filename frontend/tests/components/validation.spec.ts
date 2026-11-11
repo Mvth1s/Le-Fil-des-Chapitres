@@ -12,6 +12,14 @@ describe('isAlreadyInListError', () => {
     expect(isAlreadyInListError(error)).toBe(true)
   })
 
+  // Voir le commentaire `shortcut:` dans app/utils/validation.ts.
+  it('limite connue : renvoie aussi true pour une 422 sans champ d\'une autre exception (ChaptersExceedTotalException)', () => {
+    const error = fetchError(422, {
+      errors: [{ message: 'Le nombre de chapitres lus depasse le total' }],
+    })
+    expect(isAlreadyInListError(error)).toBe(true)
+  })
+
   it('renvoie false pour une 422 de validation avec un champ', () => {
     const error = fetchError(422, { errors: [{ field: 'status', message: 'Invalid' }] })
     expect(isAlreadyInListError(error)).toBe(false)
