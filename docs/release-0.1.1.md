@@ -19,7 +19,8 @@ repart d'ici.
   et `ofl/playfairdisplay`, 2026-11-11), convertis sans perte avec `woff2_compress`, non découpés.
 - [x] Lot 3 : composants et pages (PR #41 à #46 et 3.7 : couverture et carte, header, accueil,
   catalogue, liste, statistiques, fiche et formulaires)
-- [ ] Lot 4 : `chore/dev-demo-data`
+- [x] Lot 4 : `chore/dev-demo-data` (11 titres sans image, 10 entrées sur les 5 statuts ; un reseed
+  réapplique les valeurs de démo sur ces entrées)
 - [ ] Lot 5 : contrôle visuel et release v0.1.1
 
 ## Points signalés
