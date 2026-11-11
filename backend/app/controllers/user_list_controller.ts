@@ -62,18 +62,15 @@ export default class UserListController {
 
     // Tous les champs sont optionnels dans le validator : seuls ceux
     // reellement envoyes sont appliques (voir la meme regle dans
-    // webtoons_controller.ts#update).
+    // webtoons_controller.ts#update). null est une valeur envoyee : elle
+    // efface le champ (d'ou !== undefined et non un test de verite).
     entry.merge({
       ...(payload.status !== undefined && { status: payload.status }),
       ...(payload.chaptersRead !== undefined && { chaptersRead: payload.chaptersRead }),
       ...(payload.rating !== undefined && { rating: payload.rating }),
       ...(payload.comment !== undefined && { comment: payload.comment }),
-      ...(payload.startedAt !== undefined && {
-        startedAt: DateTime.fromJSDate(payload.startedAt),
-      }),
-      ...(payload.finishedAt !== undefined && {
-        finishedAt: DateTime.fromJSDate(payload.finishedAt),
-      }),
+      ...(payload.startedAt !== undefined && { startedAt: toDate(payload.startedAt) }),
+      ...(payload.finishedAt !== undefined && { finishedAt: toDate(payload.finishedAt) }),
     })
     await entry.save()
 
@@ -117,4 +114,8 @@ function assertChaptersWithinTotal(chaptersRead: number, chaptersTotal: number |
   if (chaptersTotal !== null && chaptersRead > chaptersTotal) {
     throw new ChaptersExceedTotalException(chaptersRead, chaptersTotal)
   }
+}
+
+function toDate(value: Date | null) {
+  return value === null ? null : DateTime.fromJSDate(value)
 }
