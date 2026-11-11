@@ -26,7 +26,7 @@ async function createEntry(
   webtoon: Webtoon,
   status: UserWebtoonStatus = 'plan_to_read',
   chaptersRead = 0,
-  extra: Partial<Pick<UserWebtoon, 'startedAt' | 'finishedAt'>> = {}
+  extra: Partial<Pick<UserWebtoon, 'startedAt' | 'finishedAt' | 'rating' | 'comment'>> = {}
 ) {
   const user = await getCurrentUser()
   return UserWebtoon.create({
@@ -183,7 +183,9 @@ test.group('User list API - lecture et creation', (group) => {
     ['statut absent', { status: undefined }],
     ['note superieure a 10', { status: 'reading', rating: 10.5 }],
     ['note negative', { status: 'reading', rating: -1 }],
+    ['note hors pas de 0,5', { status: 'reading', rating: 7.3 }],
     ['chaptersRead negatif', { status: 'reading', chaptersRead: -1 }],
+    ['chaptersRead decimal', { status: 'reading', chaptersRead: 2.5 }],
   ]
   for (const [label, payload] of invalidPayloads) {
     test(`POST /api/user/list renvoie 422 : ${label}`, async ({ client, assert }) => {
@@ -197,6 +199,19 @@ test.group('User list API - lecture et creation', (group) => {
       assert.isNull(await UserWebtoon.findBy('webtoonId', webtoon.id))
     })
   }
+
+  // Sur un champ non effacable, VineJS traite null comme un champ absent.
+  test('POST /api/user/list cree sans note quand rating est null', async ({ client, assert }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste POST note null', author: 'Test' })
+
+    const response = await client
+      .post('/api/user/list')
+      .json({ webtoonId: webtoon.id, status: 'reading', rating: null })
+
+    response.assertStatus(201)
+    const entry = await UserWebtoon.findByOrFail('webtoonId', webtoon.id)
+    assert.isNull(entry.rating)
+  })
 
   test('POST /api/user/list renvoie 422 pour un webtoonId qui n est pas un UUID', async ({
     client,
@@ -398,7 +413,10 @@ test.group('User list API - mise a jour (PUT)', (group) => {
     ['statut invalide', { status: 'finished' }],
     ['note superieure a 10', { rating: 11 }],
     ['note negative', { rating: -0.5 }],
+    ['note hors pas de 0,5', { rating: 7.3 }],
+    ['note 10,5', { rating: 10.5 }],
     ['date invalide', { startedAt: 'pas une date' }],
+    ['chaptersRead decimal', { chaptersRead: 2.5 }],
   ]
   for (const [label, payload] of invalidPayloads) {
     test(`PUT /api/user/list/:id renvoie 422 : ${label}`, async ({ client, assert }) => {
@@ -410,9 +428,141 @@ test.group('User list API - mise a jour (PUT)', (group) => {
       response.assertStatus(422)
       await entry.refresh()
       assert.equal(entry.status, 'reading')
+      assert.equal(entry.chaptersRead, 2)
       assert.isNull(entry.rating)
     })
   }
+
+  // Sur un champ non effacable, VineJS traite null comme un champ absent :
+  // la valeur en base n'est pas modifiee.
+  for (const field of ['status', 'chaptersRead'] as const) {
+    test(`PUT /api/user/list/:id ignore ${field} null (200, inchange)`, async ({
+      client,
+      assert,
+    }) => {
+      const webtoon = await Webtoon.create({ title: `Liste PUT ${field} null`, author: 'Test' })
+      const entry = await createEntry(webtoon, 'reading', 2)
+
+      const response = await client.put(`/api/user/list/${entry.id}`).json({ [field]: null })
+
+      response.assertStatus(200)
+      await entry.refresh()
+      assert.equal(entry.status, 'reading')
+      assert.equal(entry.chaptersRead, 2)
+    })
+  }
+
+  test('PUT /api/user/list/:id signale la regle halfStep pour une note 7.3', async ({ client }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste PUT halfStep', author: 'Test' })
+    const entry = await createEntry(webtoon, 'reading', 2)
+
+    const response = await client.put(`/api/user/list/${entry.id}`).json({ rating: 7.3 })
+
+    response.assertStatus(422)
+    response.assertBodyContains({ errors: [{ field: 'rating', rule: 'halfStep' }] })
+  })
+
+  test('PUT /api/user/list/:id accepte une note par pas de 0,5', async ({ client, assert }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste PUT note 7.5', author: 'Test' })
+    const entry = await createEntry(webtoon, 'reading', 2)
+
+    const response = await client.put(`/api/user/list/${entry.id}`).json({ rating: 7.5 })
+
+    response.assertStatus(200)
+    assert.strictEqual(response.body().rating, 7.5)
+    await entry.refresh()
+    assert.strictEqual(entry.rating, 7.5)
+  })
+
+  // null et "" (converti en null par le bodyparser) effacent la valeur.
+  for (const [label, empty] of [
+    ['null', null],
+    ['chaine vide', ''],
+  ] as const) {
+    test(`PUT /api/user/list/:id efface note, commentaire et dates : ${label}`, async ({
+      client,
+      assert,
+    }) => {
+      const webtoon = await Webtoon.create({ title: `Liste PUT efface ${label}`, author: 'Test' })
+      const entry = await createEntry(webtoon, 'on_hold', 3, {
+        rating: 8,
+        comment: 'A effacer',
+        startedAt: DateTime.fromISO('2026-01-10'),
+        finishedAt: DateTime.fromISO('2026-02-10'),
+      })
+
+      const response = await client.put(`/api/user/list/${entry.id}`).json({
+        rating: empty,
+        comment: empty,
+        startedAt: empty,
+        finishedAt: empty,
+      })
+
+      response.assertStatus(200)
+      assert.isNull(response.body().rating)
+      assert.isNull(response.body().comment)
+      assert.isNull(response.body().startedAt)
+      assert.isNull(response.body().finishedAt)
+      await entry.refresh()
+      assert.isNull(entry.rating)
+      assert.isNull(entry.comment)
+      assert.isNull(entry.startedAt)
+      assert.isNull(entry.finishedAt)
+      assert.equal(entry.status, 'on_hold')
+      assert.equal(entry.chaptersRead, 3)
+    })
+  }
+
+  test('PUT /api/user/list/:id avec un corps vide renvoie 200 sans rien changer', async ({
+    client,
+    assert,
+  }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste PUT vide', author: 'Test' })
+    const entry = await createEntry(webtoon, 'on_hold', 3, {
+      rating: 6.5,
+      comment: 'Garde',
+      startedAt: DateTime.fromISO('2026-01-10'),
+    })
+
+    const response = await client.put(`/api/user/list/${entry.id}`).json({})
+
+    response.assertStatus(200)
+    await entry.refresh()
+    assert.equal(entry.status, 'on_hold')
+    assert.equal(entry.chaptersRead, 3)
+    assert.strictEqual(entry.rating, 6.5)
+    assert.equal(entry.comment, 'Garde')
+    assert.equal(entry.startedAt?.toISODate(), '2026-01-10')
+    assert.isNull(entry.finishedAt)
+  })
+
+  test('PUT /api/user/list/:id laisse finishedAt efface sur une entree deja completed', async ({
+    client,
+    assert,
+  }) => {
+    const webtoon = await Webtoon.create({ title: 'Liste PUT completed efface', author: 'Test' })
+    const entry = await createEntry(webtoon, 'completed', 5, {
+      finishedAt: DateTime.fromISO('2026-02-10'),
+    })
+
+    const cleared = await client.put(`/api/user/list/${entry.id}`).json({ finishedAt: null })
+    cleared.assertStatus(200)
+    assert.isNull(cleared.body().finishedAt)
+
+    // Renvoyer le meme statut n'est pas un passage a completed.
+    const same = await client.put(`/api/user/list/${entry.id}`).json({ status: 'completed' })
+    same.assertStatus(200)
+    await entry.refresh()
+    assert.equal(entry.status, 'completed')
+    assert.isNull(entry.finishedAt)
+
+    await client.put(`/api/user/list/${entry.id}`).json({ status: 'reading' })
+    const back = await client.put(`/api/user/list/${entry.id}`).json({ status: 'completed' })
+    back.assertStatus(200)
+    assert.equal(back.body().finishedAt, today())
+    await entry.refresh()
+    assert.equal(entry.finishedAt?.toISODate(), today())
+  })
 
   test('PUT /api/user/list/:id renvoie 404 pour un id inconnu', async ({ client }) => {
     const response = await client.put(`/api/user/list/${UNKNOWN_ID}`).json({ status: 'reading' })
@@ -509,6 +659,7 @@ test.group('User list API - progression (PATCH) et suppression', (group) => {
     ['chaptersRead absent', {}],
     ['chaptersRead negatif', { chaptersRead: -1 }],
     ['chaptersRead non numerique', { chaptersRead: 'dix' }],
+    ['chaptersRead decimal', { chaptersRead: 2.5 }],
   ]
   for (const [label, payload] of invalidPayloads) {
     test(`PATCH /api/user/list/:id/progress renvoie 422 : ${label}`, async ({ client, assert }) => {

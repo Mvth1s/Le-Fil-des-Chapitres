@@ -22,3 +22,18 @@ export function extractValidationErrors(error: unknown): Record<string, string> 
   }
   return fieldErrors
 }
+
+// Le doublon (WebtoonAlreadyInListException, backend) renvoie lui aussi une
+// 422, mais ses erreurs n'ont pas de champ `field` : c'est ce qui le
+// distingue d'une erreur de validation VineJS.
+// shortcut: confondue avec E_CHAPTERS_EXCEED_TOTAL (meme forme de 422), inatteignable ici car ce POST n'envoie jamais chaptersRead, a remplacer par un code d'erreur expose par le backend si un autre formulaire l'utilise.
+export function isAlreadyInListError(error: unknown): boolean {
+  const { statusCode, data } = (error ?? {}) as {
+    statusCode?: number
+    data?: { errors?: Array<{ field?: string }> }
+  }
+  const errors = data?.errors
+  return (
+    statusCode === 422 && !!errors && errors.length > 0 && errors.every((item) => !item.field)
+  )
+}

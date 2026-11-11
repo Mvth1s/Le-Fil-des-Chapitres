@@ -204,6 +204,10 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 
 > En tant qu'utilisateur, je veux modifier le statut, la note ou le commentaire d'un webtoon de ma liste afin de les maintenir à jour.
 
+**Fonctionnalités :**
+- Les dates de début et de fin, la note et le commentaire peuvent aussi être modifiés ou effacés
+- Note de 0 à 10 par pas de 0,5
+
 ---
 
 #### US-08 — Retirer un webtoon de ma liste de lecture
@@ -508,9 +512,16 @@ Le projet repose sur une séparation claire entre :
 |---|---|---|
 | `GET` | `/api/user/list` | Récupère la liste de lecture de l'utilisateur |
 | `POST` | `/api/user/list` | Ajouter un webtoon à la liste |
-| `PUT` | `/api/user/list/:id` | Modifier une entrée (statut, chapitres, note) |
+| `PUT` | `/api/user/list/:id` | Modifier une entrée (statut, chapitres, note, commentaire, dates) |
 | `PATCH` | `/api/user/list/:id/progress` | Mise à jour rapide de la progression (+1 chapitre) |
 | `DELETE` | `/api/user/list/:id` | Retirer un webtoon de la liste |
+
+Règles de contrat de la liste de lecture :
+
+- `PUT` : un champ absent n'est pas modifié. `rating`, `comment`, `startedAt` et `finishedAt` acceptent `null` pour effacer la valeur.
+- `rating` (`POST` et `PUT`) : entre 0 et 10, par pas de 0,5.
+- `chaptersRead` (`POST`, `PUT` et `PATCH .../progress`) : entier positif ou nul, jamais supérieur à `chapters_total` quand il est défini.
+- `finished_at` est renseigné automatiquement au passage au statut `completed` (y compris par atteinte de `chapters_total`), s'il n'est pas déjà fourni.
 
 #### Genres
 

@@ -6,6 +6,11 @@ withDefaults(
     placeholder?: string
     error?: string
     disabled?: boolean
+    // Bornes natives des champs numeriques/date (indication navigateur, la
+    // validation reste faite par l'appelant et par le serveur).
+    min?: number | string
+    max?: number | string
+    step?: number | string
   }>(),
   {
     label: '',
@@ -13,6 +18,9 @@ withDefaults(
     placeholder: '',
     error: '',
     disabled: false,
+    min: undefined,
+    max: undefined,
+    step: undefined,
   }
 )
 
@@ -37,6 +45,9 @@ const inputId = useId()
       :type="type"
       :placeholder="placeholder"
       :disabled="disabled"
+      :min="min"
+      :max="max"
+      :step="step"
       class="app-input__field"
       :aria-invalid="!!error"
       :aria-describedby="error ? `${inputId}-error` : undefined"
