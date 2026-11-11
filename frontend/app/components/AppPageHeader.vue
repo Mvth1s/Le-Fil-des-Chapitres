@@ -59,6 +59,8 @@ withDefaults(
 .app-page-header__title {
   margin: 0;
   font-size: var(--fs-h1);
+  /* Titres longs sans espace (fiche, edition) : retour a la ligne force. */
+  overflow-wrap: anywhere;
   line-height: var(--lh-tight);
 }
 

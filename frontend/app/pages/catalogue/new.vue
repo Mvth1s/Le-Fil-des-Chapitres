@@ -27,8 +27,12 @@ async function handleSubmit(payload: WebtoonFormPayload) {
 
 <template>
   <main class="page">
-    <NuxtLink to="/catalogue" class="text-secondary">&larr; Retour au catalogue</NuxtLink>
-    <h1>Ajouter un webtoon</h1>
+    <NuxtLink to="/catalogue" class="back-link text-secondary">&larr; Retour au catalogue</NuxtLink>
+    <AppPageHeader
+      eyebrow="Catalogue"
+      title="Ajouter un webtoon"
+      subtitle="Le titre rejoint le catalogue commun ; tu pourras ensuite l'ajouter à ta liste."
+    />
     <WebtoonForm
       :genres="genres ?? []"
       submit-label="Ajouter au catalogue"
@@ -38,3 +42,10 @@ async function handleSubmit(payload: WebtoonFormPayload) {
     />
   </main>
 </template>
+
+<style scoped>
+.back-link {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+}
+</style>

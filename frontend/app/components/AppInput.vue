@@ -5,6 +5,8 @@ withDefaults(
     type?: string
     placeholder?: string
     error?: string
+    // Aide affichee sous le champ et liee a lui (aria-describedby).
+    hint?: string
     disabled?: boolean
     // Bornes natives des champs numeriques/date (indication navigateur, la
     // validation reste faite par l'appelant et par le serveur).
@@ -17,6 +19,7 @@ withDefaults(
     type: 'text',
     placeholder: '',
     error: '',
+    hint: '',
     disabled: false,
     min: undefined,
     max: undefined,
@@ -50,8 +53,12 @@ const inputId = useId()
       :step="step"
       class="app-input__field"
       :aria-invalid="!!error"
-      :aria-describedby="error ? `${inputId}-error` : undefined"
+      :aria-describedby="
+        [hint && `${inputId}-hint`, error && `${inputId}-error`].filter(Boolean).join(' ') ||
+          undefined
+      "
     >
+    <p v-if="hint" :id="`${inputId}-hint`" class="app-input__hint">{{ hint }}</p>
     <p v-if="error" :id="`${inputId}-error`" class="app-input__error">{{ error }}</p>
   </div>
 </template>
@@ -86,6 +93,12 @@ const inputId = useId()
 
 .app-input__field[aria-invalid='true'] {
   border-color: var(--color-rose);
+}
+
+.app-input__hint {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--color-text-soft);
 }
 
 .app-input__error {
