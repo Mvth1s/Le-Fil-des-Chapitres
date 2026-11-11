@@ -17,7 +17,8 @@ repart d'ici.
 - [x] Lot 2 : `style/design-tokens-ui-kit` (tokens, V5, couleurs statut/genre, polices auto-hébergées).
   Polices : TTF variables officiels de `google/fonts` (branche `main`, dossiers `ofl/dancingscript`
   et `ofl/playfairdisplay`, 2026-11-11), convertis sans perte avec `woff2_compress`, non découpés.
-- [ ] Lot 3 : composants et pages (7 sujets)
+- [x] Lot 3 : composants et pages (PR #41 à #46 et 3.7 : couverture et carte, header, accueil,
+  catalogue, liste, statistiques, fiche et formulaires)
 - [ ] Lot 4 : `chore/dev-demo-data`
 - [ ] Lot 5 : contrôle visuel et release v0.1.1
 
