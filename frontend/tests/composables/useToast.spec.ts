@@ -1,21 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Ref } from 'vue'
-import {
-  useToast as rawUseToast,
-  TOAST_DURATION_MS,
-  type Toast,
-} from '../../app/composables/useToast'
-
-// useState (auto-import Nuxt) n'est pas resolu par le projet TypeScript par
-// defaut qu'ESLint utilise pour tests/ : on retype le retour pour le lint.
-const useToast: () => {
-  toasts: Ref<Toast[]>
-  success: (message: string) => number
-  error: (message: string) => number
-  dismiss: (id: number) => void
-  pause: () => void
-  resume: () => void
-} = rawUseToast
+import { useToast, TOAST_DURATION_MS } from '~/composables/useToast'
 
 beforeEach(() => {
   vi.useFakeTimers()

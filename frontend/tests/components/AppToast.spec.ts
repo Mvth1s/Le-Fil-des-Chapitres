@@ -1,20 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-import type { Ref } from 'vue'
-import { useToast as rawUseToast, type Toast } from '../../app/composables/useToast'
+import { useToast } from '~/composables/useToast'
 import AppToast from '~/components/AppToast.vue'
-
-// useState (auto-import Nuxt) n'est pas resolu par le projet TypeScript par
-// defaut qu'ESLint utilise pour tests/ : on retype le retour pour le lint.
-const useToast: () => {
-  toasts: Ref<Toast[]>
-  success: (message: string) => number
-  error: (message: string) => number
-  dismiss: (id: number) => void
-  pause: () => void
-  resume: () => void
-} = rawUseToast
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -94,7 +82,8 @@ describe('AppToast', () => {
     success('B')
     await nextTick()
     const container = wrapper.find('.app-toast__container')
-    const [, second] = wrapper.findAll('.app-toast__close')
+    const second = wrapper.findAll('.app-toast__close')[1]
+    if (!second) throw new Error('second close button missing')
 
     await container.trigger('focusin')
     await container.trigger('focusout', { relatedTarget: second.element })
