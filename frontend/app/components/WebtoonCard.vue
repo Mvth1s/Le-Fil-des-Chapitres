@@ -82,7 +82,7 @@ function onIncrement() {
       </div>
 
       <div class="wt-card__foot">
-        <span v-if="entry" class="wt-card__chapters">
+        <span v-if="entry" class="wt-card__chapters" aria-live="polite">
           Ch. {{ entry.chaptersRead }}<template v-if="total"> / {{ total }}</template>
         </span>
         <span v-else-if="total" class="wt-card__chapters">{{ total }} chapitres</span>
@@ -90,7 +90,7 @@ function onIncrement() {
           v-if="canIncrement"
           type="button"
           class="wt-card__plus"
-          :aria-label="`Ajouter un chapitre lu à ${webtoon.title}`"
+          :aria-label="`+1 chapitre, ${webtoon.title}`"
           :aria-disabled="busy"
           @click="onIncrement"
         >

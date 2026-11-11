@@ -29,7 +29,7 @@ describe('AppCover', () => {
     const img = wrapper.find('img.app-cover__img')
     expect(img.attributes()).toMatchObject({
       src: URL,
-      alt: 'Couverture de Tower of God',
+      alt: '',
       loading: 'lazy',
       decoding: 'async',
       referrerpolicy: 'no-referrer',

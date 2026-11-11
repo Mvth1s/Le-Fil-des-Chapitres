@@ -45,12 +45,14 @@ const BOOKS = [
 </script>
 
 <template>
+  <!-- Decorative (alt vide, aria-hidden) : le titre est toujours affiche a
+       cote de la couverture (carte, liste, fiche). -->
   <div class="app-cover">
     <img
       v-if="src && !failed"
       ref="img"
       :src="src"
-      :alt="`Couverture de ${title}`"
+      alt=""
       width="300"
       height="400"
       loading="lazy"
@@ -59,7 +61,6 @@ const BOOKS = [
       class="app-cover__img"
       @error="failed = true"
     >
-    <!-- Decoratif : aucune information, le titre est affiche a cote. -->
     <div
       v-else
       class="app-cover__generated"

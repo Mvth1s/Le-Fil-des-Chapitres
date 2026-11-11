@@ -27,7 +27,8 @@ const readingEntries = computed(() =>
 
 const { increment, pendingIds } = useChapterIncrement(entries)
 
-// Les tuiles de stats sont patchees localement plutot que refetchees :
+// Patch local pour l'affichage immediat, puis $fetch en arriere-plan pour
+// resynchroniser la cle 'stats' partagee avec /statistiques (topRated...) :
 // refresh() repasserait pending a true et masquerait le tableau de bord.
 async function handleIncrement(entry: UserWebtoon) {
   const updated = await increment(entry)
@@ -40,6 +41,12 @@ async function handleIncrement(entry: UserWebtoon) {
     totalChaptersRead: stats.value.totalChaptersRead + updated.chaptersRead - entry.chaptersRead,
     byStatus,
   }
+  $fetch<Stats>(`${apiBase}/stats`)
+    .then((fresh) => {
+      stats.value = fresh
+    })
+    // Echec silencieux : le patch local reste affiche, /statistiques refetch a la navigation.
+    .catch(() => {})
 }
 </script>
 

@@ -32,6 +32,10 @@ repart d'ici.
   #29, #30). À régler par Mvth1s dans les paramètres GitHub (nom de profil, adresse
   privée noreply) ; pas de réécriture de `main`. Signalé par l'audit du lot 1.
 
+- `cover_url` en `http://` est accepté par le backend mais bloqué par la CSP (`img-src https:`) :
+  la couverture générée s'affiche. Le formulaire indiquera "URL https" (sujet 3.7) ; restreindre le
+  validateur backend changerait le contrat de l'API, décision laissée à Mvth1s.
+
 ## Écarts au UI kit
 
 (Rempli au lot 5.)
