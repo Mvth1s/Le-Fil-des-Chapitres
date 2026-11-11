@@ -112,9 +112,9 @@ async function handleAddToList() {
       <div class="article-header">
         <h1>{{ webtoon.title }}</h1>
         <div class="article-actions">
-          <NuxtLink :to="`/catalogue/${webtoonId}/edit`">
-            <AppButton variant="outline" size="sm">Modifier</AppButton>
-          </NuxtLink>
+          <AppButton :to="`/catalogue/${webtoonId}/edit`" variant="outline" size="sm">
+            Modifier
+          </AppButton>
           <AppButton variant="ghost" size="sm" :disabled="deleting" @click="confirmOpen = true">
             Supprimer
           </AppButton>
@@ -134,15 +134,9 @@ async function handleAddToList() {
             {{ webtoon.chaptersTotal }} chapitres au total
           </p>
 
-          <a
-            v-if="webtoon.link"
-            :href="webtoon.link"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link-button"
-          >
+          <AppButton v-if="webtoon.link" :href="webtoon.link" variant="outline">
             Lire ce webtoon
-          </a>
+          </AppButton>
         </div>
       </div>
 
@@ -245,30 +239,6 @@ article {
 
 .article-info > p:first-child {
   margin-top: 0;
-}
-
-/* Meme rendu que AppButton outline/md, sans imbriquer un bouton dans un lien. */
-.link-button {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--spacing-sm) var(--spacing-lg);
-  font-family: var(--font-body);
-  font-size: 19px;
-  font-weight: 700;
-  color: var(--color-text);
-  text-decoration: none;
-  border: 2px solid var(--color-primary);
-  border-radius: var(--radius-md);
-  transition: opacity 0.15s ease;
-}
-
-.link-button:hover {
-  opacity: 0.85;
-}
-
-.link-button:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
 }
 
 .description {

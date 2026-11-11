@@ -62,15 +62,9 @@ const readingEntries = computed(() =>
     </template>
 
     <div class="quick-links">
-      <NuxtLink to="/catalogue">
-        <AppButton>Catalogue</AppButton>
-      </NuxtLink>
-      <NuxtLink to="/liste">
-        <AppButton variant="outline">Ma liste</AppButton>
-      </NuxtLink>
-      <NuxtLink to="/statistiques">
-        <AppButton variant="outline">Statistiques</AppButton>
-      </NuxtLink>
+      <AppButton to="/catalogue">Catalogue</AppButton>
+      <AppButton to="/liste" variant="outline">Ma liste</AppButton>
+      <AppButton to="/statistiques" variant="outline">Statistiques</AppButton>
     </div>
 
     <section v-if="readingEntries.length > 0" class="section">

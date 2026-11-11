@@ -29,6 +29,8 @@ const statusOptions = [
         <AppButton variant="outline">Contour</AppButton>
         <AppButton variant="ghost">Discret</AppButton>
         <AppButton variant="primary" disabled>Désactivé</AppButton>
+        <AppButton to="/catalogue" variant="outline">Lien interne</AppButton>
+        <AppButton href="https://example.org" variant="ghost">Lien externe</AppButton>
       </div>
     </section>
 

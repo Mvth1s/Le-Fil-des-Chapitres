@@ -112,9 +112,7 @@ function setView(next: 'grid' | 'list') {
   <main class="page">
     <div class="page-header">
       <h1>Catalogue</h1>
-      <NuxtLink to="/catalogue/new">
-        <AppButton variant="outline" size="sm">Ajouter un webtoon</AppButton>
-      </NuxtLink>
+      <AppButton to="/catalogue/new" variant="outline" size="sm">Ajouter un webtoon</AppButton>
     </div>
 
     <p v-if="pending" class="text-secondary">Chargement du catalogue...</p>

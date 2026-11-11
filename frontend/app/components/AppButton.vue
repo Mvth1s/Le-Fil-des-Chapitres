@@ -1,27 +1,43 @@
 <script setup lang="ts">
+import { NuxtLink } from '#components'
+
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost'
 type Size = 'sm' | 'md'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     variant?: Variant
     size?: Size
     type?: 'button' | 'submit' | 'reset'
     disabled?: boolean
+    // Lien avec l'apparence d'un bouton (jamais un <button> dans un <a>,
+    // HTML invalide) : `to` = route interne (NuxtLink), `href` = lien externe
+    // ouvert dans un nouvel onglet.
+    to?: string
+    href?: string
   }>(),
   {
     variant: 'primary',
     size: 'md',
     type: 'button',
     disabled: false,
+    to: undefined,
+    href: undefined,
   }
 )
+
+const tag = computed(() => (props.to ? NuxtLink : props.href ? 'a' : 'button'))
+const tagAttrs = computed(() => {
+  if (props.to) return { to: props.to }
+  if (props.href) return { href: props.href, target: '_blank', rel: 'noopener noreferrer' }
+  return { type: props.type, disabled: props.disabled }
+})
 </script>
 
 <template>
-  <button :type="type" :disabled="disabled" class="app-button" :class="[`is-${variant}`, `is-${size}`]">
+  <component :is="tag" v-bind="tagAttrs" class="app-button" :class="[`is-${variant}`, `is-${size}`]">
     <slot />
-  </button>
+  </component>
 </template>
 
 <style scoped>
@@ -36,6 +52,8 @@ withDefaults(
   cursor: pointer;
   transition: opacity 0.15s ease;
   border: 2px solid transparent;
+  /* Rendu en lien (to / href) : pas de soulignement par defaut. */
+  text-decoration: none;
 }
 
 /* aria-disabled : desactive sans perdre le focus (ex. bouton de confirmation
