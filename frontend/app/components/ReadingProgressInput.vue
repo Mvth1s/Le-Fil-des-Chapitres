@@ -54,17 +54,12 @@ function handleSubmit() {
 <style scoped>
 .reading-progress-input {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: var(--spacing-sm);
 }
 
 .reading-progress-input > :first-child {
   flex: 1;
   min-width: 0;
-}
-
-/* Aligne le bouton sur le champ (sous le label de 14px). */
-.reading-progress-input > :last-child {
-  margin-top: calc(14px * 1.5 + var(--spacing-xs));
 }
 </style>

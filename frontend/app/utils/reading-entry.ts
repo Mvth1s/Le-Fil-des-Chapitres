@@ -61,6 +61,11 @@ export function validateReadingEntry(
     }
   }
 
+  // Comparaison de chaines valable : format YYYY-MM-DD de <input type="date">.
+  if (values.startedAt !== '' && values.finishedAt !== '' && values.finishedAt < values.startedAt) {
+    errors.finishedAt = 'La date de fin ne peut pas précéder la date de début.'
+  }
+
   return errors
 }
 

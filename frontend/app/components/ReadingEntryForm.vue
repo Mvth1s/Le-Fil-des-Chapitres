@@ -43,18 +43,26 @@ const shownErrors = computed(() => ({ ...props.errors, ...clientErrors.value }))
 const commentId = useId()
 const chaptersTotal = props.entry.webtoon.chaptersTotal
 
-function handleSubmit() {
+const formRef = ref<HTMLFormElement | null>(null)
+
+async function handleSubmit() {
   // Garde contre le double envoi : les boutons utilisent aria-disabled
   // (et non disabled) pour garder le focus pendant la requete.
   if (props.submitting) return
   clientErrors.value = validateReadingEntry(values, chaptersTotal)
-  if (Object.keys(clientErrors.value).length > 0) return
+  if (Object.keys(clientErrors.value).length > 0) {
+    // Premier champ en erreur dans l'ordre du formulaire (aria-invalid est
+    // pose par AppInput et la textarea).
+    await nextTick()
+    formRef.value?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    return
+  }
   emit('submit', toReadingEntryPayload(values))
 }
 </script>
 
 <template>
-  <form class="reading-entry-form" novalidate @submit.prevent="handleSubmit">
+  <form ref="formRef" class="reading-entry-form" novalidate @submit.prevent="handleSubmit">
     <p v-if="globalError" class="reading-entry-form__global-error" role="alert">
       {{ globalError }}
     </p>

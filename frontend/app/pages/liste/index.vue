@@ -2,7 +2,6 @@
 import type { UserWebtoon, UserWebtoonStatus } from '~/types/user-webtoon'
 
 const apiBase = useApiBase()
-const router = useRouter()
 const toast = useToast()
 const {
   data: entries,
@@ -50,24 +49,25 @@ const filteredEntries = computed(() => {
   })
 })
 
-function goToDetail(webtoonId: string) {
-  void router.push(`/catalogue/${webtoonId}`)
-}
+// Ids des entrees ayant une requete en vol : une seule requete a la fois par
+// entree (+1, saisie directe, statut, edition), sans bloquer les autres cartes.
+const pendingIds = reactive(new Set<string>())
 
-const updatingId = ref<string | null>(null)
-
-async function handleStatusChange(entry: UserWebtoon, newStatus: string) {
-  updatingId.value = entry.id
+async function handleStatusChange(entry: UserWebtoon, newStatus: UserWebtoonStatus) {
+  if (pendingIds.has(entry.id)) return
+  pendingIds.add(entry.id)
   try {
-    await $fetch(`${apiBase}/user/list/${entry.id}`, {
+    const updated = await $fetch<UserWebtoon>(`${apiBase}/user/list/${entry.id}`, {
       method: 'PUT',
       body: { status: newStatus },
     })
-    await refresh()
+    // Patch local plutot que refresh() : refresh repasse pending a true, ce
+    // qui demonterait toute la liste et ferait perdre le focus.
+    patchEntry(entry.id, updated)
   } catch {
-    toast.error('Le changement de statut a echoue. Reessaie dans un instant.')
+    toast.error('Le changement de statut a échoué. Réessaie dans un instant.')
   } finally {
-    updatingId.value = null
+    pendingIds.delete(entry.id)
   }
 }
 
@@ -90,8 +90,8 @@ function patchEntry(id: string, patch: Partial<UserWebtoon>) {
 // suite, puis prend la reponse serveur (le statut peut passer a "completed")
 // ou revient a l'ancienne valeur en cas d'echec.
 async function updateProgress(entry: UserWebtoon, chaptersRead: number) {
-  if (updatingId.value === entry.id) return
-  updatingId.value = entry.id
+  if (pendingIds.has(entry.id)) return
+  pendingIds.add(entry.id)
   const previous = entry.chaptersRead
   patchEntry(entry.id, { chaptersRead })
   try {
@@ -101,14 +101,20 @@ async function updateProgress(entry: UserWebtoon, chaptersRead: number) {
     })
     patchEntry(entry.id, updated)
   } catch (error) {
-    patchEntry(entry.id, { chaptersRead: previous })
+    // Retour arriere seulement si l'entree n'a pas change entre-temps : toute
+    // reponse serveur appliquee modifie updatedAt (et une valeur differente
+    // de chaptersRead signale une autre modification locale).
+    const current = entries.value?.find((item) => item.id === entry.id)
+    if (current && current.updatedAt === entry.updatedAt && current.chaptersRead === chaptersRead) {
+      patchEntry(entry.id, { chaptersRead: previous })
+    }
     toast.error(
       extractBusinessError(error) ??
         Object.values(extractValidationErrors(error))[0] ??
         'La mise à jour de la progression a échoué. Réessaie dans un instant.'
     )
   } finally {
-    updatingId.value = null
+    pendingIds.delete(entry.id)
   }
 }
 
@@ -127,12 +133,14 @@ function openEdit(entry: UserWebtoon) {
 }
 
 async function handleEditSubmit(payload: ReadingEntryPayload) {
-  if (!editTarget.value || saving.value) return
+  if (!editTarget.value || saving.value || pendingIds.has(editTarget.value.id)) return
+  const id = editTarget.value.id
+  pendingIds.add(id)
   saving.value = true
   editErrors.value = {}
   editGlobalError.value = ''
   try {
-    const updated = await $fetch<UserWebtoon>(`${apiBase}/user/list/${editTarget.value.id}`, {
+    const updated = await $fetch<UserWebtoon>(`${apiBase}/user/list/${id}`, {
       method: 'PUT',
       body: payload,
     })
@@ -153,6 +161,7 @@ async function handleEditSubmit(payload: ReadingEntryPayload) {
     }
   } finally {
     saving.value = false
+    pendingIds.delete(id)
   }
 }
 
@@ -223,13 +232,15 @@ function formatRating(rating: number) {
           v-for="entry in filteredEntries"
           :key="entry.id"
           class="entry-card"
-          role="link"
-          tabindex="0"
-          @click="goToDetail(entry.webtoonId)"
-          @keydown.enter.self="goToDetail(entry.webtoonId)"
         >
           <template #header>
-            <h3>{{ entry.webtoon.title }}</h3>
+            <!-- Le lien du titre s'etend a toute la carte (::after, voir le
+                 style) ; les controles sont places au-dessus. -->
+            <h3>
+              <NuxtLink :to="`/catalogue/${entry.webtoonId}`" class="entry-link">
+                {{ entry.webtoon.title }}
+              </NuxtLink>
+            </h3>
           </template>
 
           <p class="text-secondary">{{ entry.webtoon.author }}</p>
@@ -245,8 +256,8 @@ function formatRating(rating: number) {
               variant="outline"
               size="sm"
               :disabled="!canAddChapter(entry)"
-              :aria-disabled="updatingId === entry.id"
-              @click.stop="updateProgress(entry, entry.chaptersRead + 1)"
+              :aria-disabled="pendingIds.has(entry.id)"
+              @click="updateProgress(entry, entry.chaptersRead + 1)"
             >
               +1 chapitre
             </AppButton>
@@ -255,8 +266,7 @@ function formatRating(rating: number) {
           <ReadingProgressInput
             :chapters-read="entry.chaptersRead"
             :chapters-total="entry.webtoon.chaptersTotal"
-            :disabled="updatingId === entry.id"
-            @click.stop
+            :disabled="pendingIds.has(entry.id)"
             @submit="(value) => updateProgress(entry, value)"
           />
 
@@ -287,16 +297,13 @@ function formatRating(rating: number) {
             </AppBadge>
           </div>
 
-          <!-- @click.stop : un <select> est du contenu interactif, il ne peut
-               pas etre imbrique dans un lien (HTML invalide, comportement
-               clavier/lecteur d'ecran impredictible). La carte entiere navigue
-               au clic, sauf ici ou le select garde son propre comportement. -->
+          <!-- disabled natif (pas aria-disabled) : un <select> aria-disabled
+               changerait quand meme de valeur a l'ecran. -->
           <AppSelect
             label="Statut"
             :model-value="entry.status"
             :options="statusOptions"
-            :disabled="updatingId === entry.id"
-            @click.stop
+            :disabled="pendingIds.has(entry.id)"
             @update:model-value="(value) => handleStatusChange(entry, value as UserWebtoonStatus)"
           />
 
@@ -305,7 +312,7 @@ function formatRating(rating: number) {
               variant="outline"
               size="sm"
               :aria-label="`Modifier ma lecture de ${entry.webtoon.title}`"
-              @click.stop="openEdit(entry)"
+              @click="openEdit(entry)"
             >
               Modifier
             </AppButton>
@@ -313,7 +320,7 @@ function formatRating(rating: number) {
               variant="ghost"
               size="sm"
               :aria-label="`Retirer ${entry.webtoon.title} de ma liste`"
-              @click.stop="openRemove(entry)"
+              @click="openRemove(entry)"
             >
               Retirer
             </AppButton>
@@ -388,9 +395,9 @@ function formatRating(rating: number) {
 }
 
 .entry-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  cursor: pointer;
   transition:
     transform 0.15s ease,
     border-color 0.15s ease;
@@ -401,7 +408,24 @@ function formatRating(rating: number) {
   transform: scale(1.02);
 }
 
-.entry-card:focus-visible {
+.entry-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Rend toute la carte cliquable sans imbriquer de controles dans un lien. */
+.entry-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.entry-link:focus-visible {
+  outline: none;
+}
+
+.entry-card:has(.entry-link:focus-visible) {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
@@ -413,22 +437,13 @@ function formatRating(rating: number) {
   flex: 1;
 }
 
-/* Le select de statut et le bouton +1 chapitre restent des commandes
-   independantes de la navigation de la carte (voir @click.stop dans le
-   template) : curseur normal, pas de confusion avec le clic-pour-naviguer
-   du reste de la carte. */
+/* Les controles passent au-dessus du ::after du lien de titre : ils gardent
+   leur propre comportement au clic au lieu d'ouvrir la fiche. */
 .entry-card :deep(.app-select),
 .entry-card :deep(.app-input),
 .entry-card :deep(.app-button) {
-  cursor: auto;
-}
-
-/* Annule le curseur "interdit" par defaut de AppButton:disabled : le
-   bouton est desactive tres brievement pendant la requete (voir
-   updatingId), l'opacite reduite suffit comme indicateur, la croix rouge
-   du curseur clignotant le temps de l'appel est plus perturbante qu'utile. */
-.entry-card :deep(.app-button:disabled) {
-  cursor: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .progress {
