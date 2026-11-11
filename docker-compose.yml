@@ -81,8 +81,10 @@ services:
       - node ace migration:run --connection=migration && node ace db:seed && exec node ace serve --hmr
     ports:
       # Publie pour les tests manuels de l'API (Postman, curl) ; le navigateur,
-      # lui, passe par le proxy du frontend.
-      - '3333:3333'
+      # lui, passe par le proxy du frontend (reseau Docker interne). Lie a
+      # 127.0.0.1 comme postgres : API_KEY etant vide en local, /api ne doit
+      # pas etre joignable depuis le reseau local.
+      - '127.0.0.1:3333:3333'
     volumes:
       # :Z relabelle le contenu monte avec le contexte SELinux attendu par
       # le conteneur (necessaire sur Fedora/RHEL en mode Enforcing, sinon
