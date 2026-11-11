@@ -243,6 +243,23 @@ const statusOptions = [
     </section>
 
     <section>
+      <h2>En-tête de page</h2>
+      <p class="text-secondary">
+        AppPageHeader rend le h1 de la page : à utiliser une seule fois par page (démo ci-dessous
+        exceptée).
+      </p>
+      <AppPageHeader
+        eyebrow="La bibliothèque"
+        title="Catalogue global"
+        subtitle="Tous les webtoons référencés, qu'ils soient dans ta liste ou non."
+      >
+        <template #actions>
+          <AppButton variant="outline" size="sm">Action</AppButton>
+        </template>
+      </AppPageHeader>
+    </section>
+
+    <section>
       <h2>Carte webtoon</h2>
       <p class="text-secondary">
         Webtoon hors liste, en cours (bouton +1), terminé, total inconnu, ouverture par événement.
