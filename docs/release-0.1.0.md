@@ -8,10 +8,12 @@ Si une session s'interrompt, la suivante repart d'ici.
 - [x] Lot 1 : audit et vérification des hypothèses (rapport sécurité : `docs/audits/securite-2026-11-10-lot1.md`)
 - [x] Lot 2 : `fix/security-baseline-secrets` (PR #18) (testé sur clone propre : compose up OK, rôles owner/app/ro, CRUD via `_app`)
 - [x] Lot 3 : `docs/agents-and-alignment` (PR #19)
-- [ ] Lot 4 : fonctionnalités manquantes
-- [ ] Lot 5 : `test/backend-reading-list-and-stats`
-- [ ] Lot 6 : `deploy/alwaysdata-vercel`
-- [ ] Lot 7 : release v0.1.0 sur `main`
+- [x] Lot 4 : fonctionnalités manquantes : 4.1 modale et toasts (PR #20), 4.2 ajout à la liste
+  (PR #22), 4.3 édition d'une entrée (PR #24), 4.4 recherche et filtres du catalogue (PR #23),
+  4.5 tris et note minimale de la liste (PR #26), 4.6 couvertures, contrastes, responsive (PR #27)
+- [x] Lot 5 : `test/backend-reading-list-and-stats` (PR #21 ; tests X-Api-Key et /health livrés avec le lot 6)
+- [x] Lot 6 : `deploy/alwaysdata-vercel` (PR #25 ; testé sur clone propre via le proxy Nitro)
+- [x] Lot 7 : `chore/release-0.1.0`, versions 0.1.0, `CHANGELOG.md`, audit fonctionnel en conditions réelles, release sur `main`
 
 ## Agents
 
@@ -48,31 +50,54 @@ lancés via un agent générique appliquant leur fichier de rôle. Ils sont nati
 
 ## Écarts fonctionnels
 
-Audit du 2026-11-10 sur `dev` (77744ec). **Vérification runtime impossible** :
-`docker compose up -d --build` échoue car `backend/.env` et `frontend/.env` sont absents
-(`docker-compose.yml:31-32` et `:51-52` les exigent ; seul `.env` racine existe). Aucun
-curl n'a donc pu être joué (ports 3333 et 3000 : connexion refusée). Les preuves
-ci-dessous viennent de la lecture du code (routes, controllers, modèle, pages Nuxt). A
-rejouer en runtime une fois les `.env` en place.
+L'audit initial du lot 1 (2026-11-10, lecture de code seule, runtime impossible faute de
+`.env`) est remplacé par l'audit runtime ci-dessous.
+
+Audit runtime du 2026-11-11 sur la branche `chore/release-0.1.0` (dev + versions), pile
+lancée par `docker compose -p lfdc7 up -d --build` avec un `.env` racine aléatoire (clé
+API vide, Basic Auth désactivée). Toutes les requêtes passent par le FRONTEND
+(`http://127.0.0.1:3000`, proxy Nitro `/api/**`) ; `GET /health` (3333) : 200. Pages
+contrôlées en rendu SSR (curl) et par lecture du code pour l'interactif.
+
+Parcours bout en bout joué (données de test créées puis supprimées, liste et catalogue
+revenus à l'état initial, stats à 0) :
+`POST /api/webtoons` (cover `https://...`, 2 genres, 5 chapitres) 201 ; `PUT` total 6 : 200 ;
+`POST /api/user/list` (reading) 201 avec `startedAt` auto ; `PATCH .../progress` 1 : 200 ;
+7 : 422 (plafond) ; -1 : 422 ; 6 : 200 avec `status=completed` et `finishedAt` auto ;
+`PUT /api/user/list/:id` note 8.5 + commentaire + dates : 200 ; note 8.3 : 422 (pas de
+0,5) ; note 11 : 422 ; `GET /api/stats` : total 1, 6 chapitres, `completed` 1, top genres,
+top noté 8.5 ; `PUT` `rating/comment/startedAt: null` : 200, champs effacés, top noté
+vide ; `DELETE /api/user/list/:id` 204 (puis 404), webtoon toujours en 200 ; réajout puis
+`DELETE /api/webtoons/:id` 204, entrée de liste en 404 (cascade), webtoon en 404.
 
 Chemins : `B/` = `backend/`, `F/` = `frontend/app/`.
 
-| US | Statut | Preuve | Manque précis |
+| US | Statut | Preuve | Écart restant |
 |---|---|---|---|
-| US-01 Ajouter au catalogue | partielle | `B/start/routes.ts:26`, `B/app/controllers/webtoons_controller.ts:19-42`, titre unique `B/app/validators/create_webtoon.ts:21` + migration webtoons `:10`, `F/pages/catalogue/new.vue`, `F/components/WebtoonForm.vue:64-112` | Pas de création de genre à la volée (aucun `POST /api/genres`, cases à cocher sur le référentiel seul). Upload de couverture absent (bloqué volontairement, URL seule : conforme CLAUDE.md section 11). |
-| US-02 Modifier | couverte | `B/start/routes.ts:27`, `webtoons_controller.ts:44-78`, `F/pages/catalogue/[id]/edit.vue:33-34` (erreurs 422 affichées) | Rien. |
-| US-03 Supprimer | partielle | Cascade OK : `B/database/migrations/1787509883756_create_user_webtoons_table.ts:17`, `..._create_webtoon_genres_table.ts:13`. Front : `F/pages/catalogue/[id]/index.vue:24-35` | Confirmation via `confirm()` natif (`:25`), pas de modale du design system. Correction de l'écart présumé : il n'y a **pas** d'`alert()` ici, il n'y a **aucune** gestion d'erreur (`try/finally` sans `catch`) : un DELETE en échec est silencieux pour l'utilisateur (rejet de promesse non géré). Les `alert()` sont dans `F/pages/liste/index.vue:67,90`. |
-| US-04 Consulter le catalogue | partielle | `F/pages/catalogue/index.vue:41-63` (grille de cartes seule), tri fixe `webtoons_controller.ts:10` (`title asc`) | Pas de bascule grille / liste. Pas de tri (date d'ajout, nb chapitres). Pas de filtres (genre, statut de lecture, auteur). Cartes sans couverture (voir ligne Couverture). |
-| US-05 Ajouter à ma liste | partielle | Back OK : `B/start/routes.ts:33`, `user_list_controller.ts:22-52`, 409 doublon `:32-34`, dates auto `B/app/models/user_webtoon.ts:91-96`. Front : aucun appel `POST /user/list` dans `F/` (grep `user/list` : seulement GET/PUT/PATCH) | Confirmé : aucun bouton "Ajouter à ma liste" sur la fiche (`F/pages/catalogue/[id]/index.vue:52-78`) ni ailleurs. Fonctionnalité inaccessible depuis l'UI, la liste ne peut être alimentée que par API ou seed. |
-| US-06 Progression | partielle | `+1 chapitre` : `F/pages/liste/index.vue:78-94,146-153`. Passage auto à `completed` : `B/app/models/user_webtoon.ts:78-89`. Plafond `chapters_total` : `user_list_controller.ts:116-120` | Confirmé : pas de champ de saisie directe du chapitre courant (le PATCH accepte pourtant une valeur absolue, `B/app/validators/update_progress.ts`). Le statut mis à jour par le back n'est visible qu'après `refresh()` (OK). |
-| US-07 Modifier infos de lecture | partielle | Back OK : `user_list_controller.ts:54-82` (status, rating, comment, dates). Front : seul le statut est éditable, `F/pages/liste/index.vue:58-71,166-173` | Confirmé : pas d'édition de la note, du commentaire, des dates de début / fin. Ces champs ne sont même pas affichés sur la carte de liste ni sur la fiche. |
-| US-08 Retirer de ma liste | partielle | Back OK : `B/start/routes.ts:36`, `user_list_controller.ts:98-102` (204) | Confirmé : aucun bouton "Retirer de ma liste" (aucun `DELETE /user/list` dans `F/`). |
-| US-09 Rechercher | absente | grep `search|debounce|normalize` dans `F/` : 0 résultat. Aucun paramètre de requête côté `webtoons_controller.ts:9-12` ni `user_list_controller.ts:13-20` | Confirmé : aucune recherche (titre / auteur), ni temps réel, ni insensibilité casse / accents, ni sur le catalogue ni sur la liste. Le debounce 300 ms est exigé par le cahier section 11 (`CAHIER_DES_CHARGES.md:520`), absent aussi. |
-| US-10 Filtrer et trier la liste | partielle | Filtres statut + genre : `F/pages/liste/index.vue:17-50,114-117`. Ordre fixe `updatedAt desc` : `user_list_controller.ts:18` | Confirmé : pas de filtre par note (ex : >= 8). Aucun tri (titre A-Z / Z-A, date d'ajout, note, % de progression). |
-| US-11 Statistiques | partielle | `B/start/routes.ts:38`, top 3 genres `B/app/controllers/stats_controller.ts:39-40`, top 5 notés `:46-47`, `F/pages/statistiques/index.vue:30-72` | "Répartition par statut (graphique)" : rendue en simple liste de badges + nombres (`:41-49`), pas de graphique. Le reste (total, chapitres lus, top 3, top 5) est présent. |
-| Couverture (`cover_url`) | absente à l'affichage | Saisie OK : `F/components/WebtoonForm.vue:78-84`. Aucun `<img>` / usage de `coverUrl` dans `F/pages/` (grep) | Confirmé : la couverture n'est affichée ni sur les cartes du catalogue, ni sur la fiche, ni sur la liste. Contredit US-04 "cartes visuelles avec couverture". |
-| Tests backend | partielle | `B/tests/functional/` : `genres.spec.ts` (1 test), `webtoons.spec.ts` (GET liste, GET 404, rejet protocoles URL, POST https) | Confirmé : aucun test pour `/api/user/list` (store, doublon 409, update, progress, plafond, passage auto à `completed`, destroy) ni pour `/api/stats`. Les webtoons n'ont pas non plus de test de titre dupliqué, de PUT nominal ni de DELETE avec cascade. |
-| Ergonomie erreurs liste | écart annexe | `F/pages/liste/index.vue:67,90` | `alert()` natif pour les erreurs de changement de statut et de progression, hors design system. |
+| US-01 Ajouter au catalogue | partielle | `POST /api/webtoons` 201 ; titre dupliqué 422 (`database.unique`) ; sans auteur 422 ; `coverUrl` `javascript:` 422. SSR `/catalogue/new` 200 (genres en cases à cocher). `F/components/WebtoonForm.vue:79-111` | Pas de création de genre (`POST /api/genres` : 404, aucune UI). Upload de couverture absent (URL externe seule, choix assumé CLAUDE.md section 11). |
+| US-02 Modifier | couverte | `PUT /api/webtoons/:id` 200 (chapitres 5 vers 6, genres et cover conservés) ; id inconnu 404. SSR `/catalogue/:id/edit` 200, champs préremplis | Rien. |
+| US-03 Supprimer | couverte | `DELETE /api/webtoons/:id` 204, entrée de liste associée en 404 ensuite (cascade). Confirmation par `AppModal` `F/pages/catalogue/[id]/index.vue:165-189`, erreur en toast `:37-38` | Rien. |
+| US-04 Consulter le catalogue | couverte | SSR `/catalogue` 200 : carte avec `<img src="https://example.com/cover.jpg">` (`AppCover`) ; `/catalogue?vue=liste` 200 avec `<table>`. Tri titre / date d'ajout / chapitres, filtres genre / statut de lecture / auteur : `F/pages/catalogue/index.vue:36-87,130-147` | Rien (filtrage et tri côté client, `F/utils/catalogue.ts`). |
+| US-05 Ajouter à ma liste | couverte | `POST /api/user/list` 201, `chaptersRead` 0 par défaut, `startedAt` auto ; statut invalide 422 ; doublon 422 (message métier). Bouton "Ajouter à ma liste" + choix du statut sur la fiche (SSR 200) `F/pages/catalogue/[id]/index.vue:73-94,156-161` | Mineur : doublon en 422 et non 409 (`B/app/exceptions/webtoon_already_in_list_exception.ts:9`), le front le gère (`F/utils/validation.ts:30`). |
+| US-06 Progression | couverte | `PATCH .../progress` 200 / 422 (plafond, négatif) ; à 6/6 : `completed` + `finishedAt`. SSR `/liste` : "+1 chapitre", "Chapitre actuel", "6 / 6 chapitres", "Terminé". `F/pages/liste/index.vue:134-161,322-338`, `F/components/ReadingProgressInput.vue` | Rien. |
+| US-07 Modifier infos de lecture | couverte | `PUT /api/user/list/:id` 200 (note, commentaire, dates), effacement par `null` 200 ; pas de 0,5 et bornes 0-10 en 422. Modale d'édition `F/pages/liste/index.vue:177-208,399-412`, `F/components/ReadingEntryForm.vue:83-118` (`step 0.5`), `null` pour champ vide `F/utils/reading-entry.ts:73-82`. SSR `/liste` affiche "8,5 / 10", commentaire, dates | Rien. |
+| US-08 Retirer de ma liste | couverte | `DELETE /api/user/list/:id` 204, webtoon conservé (GET 200). Bouton "Retirer" + modale `F/pages/liste/index.vue:221-239,386-393,414-433` | Rien. |
+| US-09 Rechercher | couverte | Champ "Rechercher (titre ou auteur)" sur catalogue et liste, debounce 300 ms (`F/pages/catalogue/index.vue:36-37`, `F/pages/liste/index.vue:24-25`), normalisation casse / accents NFD `F/utils/search.ts:4-6` | Recherche côté client uniquement (pas de paramètre API) : suffisant à l'échelle d'un usage personnel. Non joué en navigateur (interactif). |
+| US-10 Filtrer et trier la liste | couverte | Filtres statut, genre, note minimale (5 à 9) ; tris titre A-Z / Z-A, date d'ajout récent / ancien, note croissante / décroissante, progression % : `F/pages/liste/index.vue:24-73,263-275`, `F/utils/reading-list.ts` | Rien. |
+| US-11 Statistiques | partielle | `GET /api/stats` 200 (total, chapitres, `byStatus`, top 3 genres, top 5 notés, valeurs justes pendant le parcours). SSR `/statistiques` 200 | "Répartition par statut (graphique)" : toujours une liste badge + nombre (`F/pages/statistiques/index.vue:41-49`), aucun `<svg>` / `<canvas>`. Mineur : note affichée "8.5/10" (`:69`) alors que la liste affiche "8,5 / 10". |
+
+Écarts au cahier encore ouverts :
+- US-01 : création de genre à la volée absente (référentiel figé de 14 genres).
+- US-01 : upload de couverture absent (URL externe seule ; hors périmètre assumé par
+  CLAUDE.md section 11, à refléter dans le cahier).
+- US-11 : pas de graphique pour la répartition par statut.
+- Annexe : fiche d'un webtoon inexistant rendue en SSR avec HTTP 200 et le message
+  "Ce webtoon n'existe pas" (soft 404) ; doublon de liste en 422 au lieu de 409 (le cahier
+  section 10 et CLAUDE.md ne fixent pas ce code, à arbitrer) ; séparateur décimal de la
+  note incohérent entre `/statistiques` et `/liste`.
+- Lignes annexes du lot 1 soldées : couverture affichée (catalogue, fiche, liste via
+  `AppCover`) ; plus aucun `alert()` / `confirm()` natif dans `F/` (grep) ; tests
+  `B/tests/functional/user_list.spec.ts` et `stats.spec.ts` présents (non exécutés ici).
 
 ## Hypothèses
 
@@ -142,3 +167,22 @@ Toutes consultées le 2026-11-10.
 - Les restrictions des agents (Bash limité, pas de Git en écriture) sont déclaratives :
   aucune règle `permissions.deny` dans `.claude/settings.json` ne les impose. Ajouter de
   telles règles relève d'un réglage de permissions : décision de Mvth1s (audit lot 3, M3).
+- 2026-11-11 : Mvth1s valide le changement de contrat de `PUT /api/user/list/:id` (`null` efface
+  `rating`, `comment`, `startedAt`, `finishedAt`). `null` sur un champ non effaçable est ignoré
+  comme un champ absent (testé). Le doublon de liste reste en 422 (contrat existant, le cahier
+  ne fixe pas de code).
+- Les worktrees du scratchpad ont été vidés pendant une interruption de session ; aucun commit
+  perdu (branches poussées), worktrees recréés depuis `origin`.
+- Bug corrigé grâce aux tests : un `:id` non UUID renvoyait 500 (contrainte de route stricte).
+- Workflow de déploiement : `pipefail` (un échec distant était masqué par `| tee`) et
+  nettoyage des releases qui protège la cible de repli, relevés en relecture.
+- `NODE_OPTIONS=--max-old-space-size=128` sur le site (H1) et 96 Mo pour les commandes `node ace`
+  du déploiement (limite RAM alwaysdata par compte).
+- À arbitrer par Mvth1s (charte, non tranché) : contour de focus doré (2,1:1) et bordure des
+  champs (1,3:1) sous le seuil WCAG 1.4.11 des éléments non textuels ; badges à 12-13 px dans
+  le tableau typographique du cahier contre 14 px minimum (le code applique 14 px) ; hachage
+  décrit comme bcrypt dans CLAUDE.md et le cahier alors que le code utilise scrypt.
+- Écarts fonctionnels restants (détail dans la section dédiée) : création de genre absente
+  (nouvel endpoint, à valider), pas de graphique de répartition par statut (US-11), fiche d'un
+  webtoon inexistant rendue en HTTP 200, affichage de la note "8.5" dans les statistiques et
+  "8,5" dans la liste, `comment` sans longueur maximale côté validator (corps limité à 100 ko).

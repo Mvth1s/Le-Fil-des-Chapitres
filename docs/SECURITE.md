@@ -116,7 +116,7 @@ Points clés :
 |---|---|---|
 | `npm audit` bloquant | `--omit=dev --audit-level=high` sur backend et frontend, à chaque PR | `.github/workflows/ci.yml` (job `deps-audit`) |
 | gitleaks bloquant | Binaire officiel 8.30.1 vérifié par SHA-256, scan des commits de la PR, `--redact` | `.github/workflows/ci.yml` (job `secrets-scan`) |
-| Faux positifs tracés | Chaque exception est commentée (exemples de commande curl issus de la documentation, aucune clé réelle) | `.gitleaksignore` |
+| Faux positifs tracés | Chaque exception est commentée : exemples de commande curl issus de la documentation (aucune clé réelle) ; clé `APP_KEY` fixe de l'ancienne CI éphémère (ajoutée au commit `5f458c0`, retirée au commit `9ca5d62`, aucune donnée réelle, réutilisée dans aucun `.env` local). Elle reste dans l'historique public : **ne jamais la réutiliser** (entrée `5f458c0`, `.github/workflows/ci.yml`, règle `generic-api-key`) | `.gitleaksignore` |
 | Dependabot | Hebdomadaire : npm backend, npm frontend, GitHub Actions ; 5 PR max par écosystème | `.github/dependabot.yml` |
 | Actions épinglées par SHA | `actions/checkout`, `actions/setup-node` épinglées par SHA complet, tag en commentaire | `.github/workflows/ci.yml`, `.github/workflows/deploy-backend.yml` |
 | Permissions minimales | `permissions: contents: read` sur les deux workflows ; `persist-credentials: false` sur chaque `actions/checkout` (le jeton n'est pas laissé dans `.git/config`) | `.github/workflows/ci.yml`, `.github/workflows/deploy-backend.yml` |
@@ -140,6 +140,7 @@ Points clés :
 | Isolation partielle des secrets du workflow | `npm ci` tourne sans secret, mais un script `postinstall` d'une dépendance pourrait écrire dans `$GITHUB_ENV` et influencer les steps suivants, qui eux reçoivent des secrets (`.github/workflows/deploy-backend.yml`, step "Build backend") | Accepté ; atténué par `npm audit`, Dependabot et le lockfile |
 | Secrets `_owner` dans l'environnement distant | Pendant le déploiement, `DB_PASSWORD` de `_owner` est exporté dans l'environnement des process `node ace` et `psql` sur alwaysdata, lisible par le même utilisateur Unix que le site (`.github/workflows/deploy-backend.yml`, step "Migrate, grant, bootstrap and switch") | Accepté : exposition limitée à la durée du déploiement, jamais écrit sur disque |
 | `_app` a le DML sur `adonis_schema*` | `grants.sql` accorde le DML sur toutes les tables du schéma `public`, y compris les tables de suivi des migrations (`backend/database/sql/grants.sql`) | Accepté en 0.1.0 ; révoquer ces tables pour `_app` en amélioration future |
+| Failles npm modérées restantes | `deepmerge`, `minimatch`, `glob` (présents dans `backend/package-lock.json` et `frontend/package-lock.json`) : correctifs uniquement en version majeure, sous le seuil `high` du job `deps-audit` donc non bloquants | Accepté ; suivi par Dependabot (`.github/dependabot.yml`). Résultat de `npm audit` non rejoué par la documentation |
 | Images Docker par tag | `postgres:16`, `adminer:4`, `node:24-alpine` non épinglées par digest ; Dependabot ne couvre pas l'écosystème `docker` | Local et CI uniquement ; digest en amélioration future (audit lot 2, constat 10) |
 
 ---
@@ -185,5 +186,6 @@ même après suppression du commit.
 | Moyenne | Rotation périodique planifiée des secrets (section 3), au moins annuelle et à chaque doute | Faible |
 | Moyenne | Audit OWASP ASVS niveau 1 complet | Moyen |
 | Basse | CSP sans `'unsafe-inline'` (nonces sur les scripts Nuxt) | Élevé |
+| Moyenne | Résorber les failles npm modérées (`deepmerge`, `minimatch`, `glob`) en acceptant les montées de version majeure proposées par Dependabot | Moyen |
 | Basse | Images Docker épinglées par digest, écosystème `docker` ajouté à Dependabot | Faible |
 | Basse | Authentification réelle (Phase 3), qui remplacera la Basic Auth comme protection d'accès | Élevé |

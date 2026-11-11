@@ -8,3 +8,9 @@ bc15dbcd0af4a8d58d11eb35c8ae6658b5470f92:docs/release-0.1.0.md:curl-auth-user:72
 # meme si le texte est reformule ensuite.
 430d128df18d7dec0ec483caeebcf39ca924eaab:docs/DEPLOIEMENT.md:curl-auth-user:208
 430d128df18d7dec0ec483caeebcf39ca924eaab:docs/DEPLOIEMENT.md:curl-auth-user:475
+
+# Faux positif historique : APP_KEY fixe d'une ancienne CI ephemere (base
+# jetable du runner), aucune donnee reelle, jamais reutilisee en local ni en
+# production, retiree en 9ca5d62. Necessaire car la PR vers main scanne
+# tout l'historique de dev.
+5f458c02982c79b5fa5d294e8b5fe116e0325da8:.github/workflows/ci.yml:generic-api-key:92

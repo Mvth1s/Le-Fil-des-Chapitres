@@ -9,19 +9,24 @@
 
 ## Vue d'ensemble - Phase 1 (MVP, version 0.1.0)
 
-| # | Étape | Branche |
-|---|---|---|
-| 1 | Mise en place du projet (Docker local) | `chore/setup-project` |
-| 2 | Schéma de base de données et migrations | `feature/database-schema` |
-| 3 | API REST : CRUD webtoons (catalogue) | `feature/api-webtoons` |
-| 4 | API REST : liste de lecture et statistiques | `feature/api-user-list` |
-| 5 | Design system (composants, charte graphique) | `feature/design-system` |
-| 6 | Interface : catalogue (liste + fiche détail) | `feature/catalogue-ui` |
-| 7 | Interface : formulaires d'ajout et de modification | `feature/webtoons-forms` |
-| 8 | Interface : liste de lecture (filtres, statuts) | `feature/reading-list-ui` |
-| 9 | Interface : mise à jour rapide de la progression | `feature/progress-quick-update` |
-| 10 | Interface : statistiques basiques | `feature/stats-ui` |
-| 11 | Déploiement (alwaysdata, Vercel) | `deploy/production-setup` |
+| # | Étape | Branche | Fait |
+|---|---|---|---|
+| 1 | Mise en place du projet (Docker local) | `chore/setup-project` | [x] |
+| 2 | Schéma de base de données et migrations | `feature/database-schema` | [x] |
+| 3 | API REST : CRUD webtoons (catalogue) | `feature/api-webtoons` | [x] |
+| 4 | API REST : liste de lecture et statistiques | `feature/api-user-list` | [x] |
+| 5 | Design system (composants, charte graphique) | `feature/design-system` | [x] |
+| 6 | Interface : catalogue (liste + fiche détail) | `feature/catalogue-ui` | [x] |
+| 7 | Interface : formulaires d'ajout et de modification | `feature/webtoons-forms` | [x] |
+| 8 | Interface : liste de lecture (filtres, statuts) | `feature/reading-list-ui` | [x] |
+| 9 | Interface : mise à jour rapide de la progression | `feature/progress-quick-update` | [x] |
+| 10 | Interface : statistiques basiques | `feature/stats-ui` | [x] |
+| 11 | Déploiement (alwaysdata, Vercel) | `deploy/production-setup` | [ ] |
+
+Étape 11 : tout ce qui vit dans le dépôt est livré (proxy Nitro, Basic Auth, `X-Api-Key`,
+rôles PostgreSQL, `deploy-backend.yml`, `docs/DEPLOIEMENT.md`). Reste à faire à la main :
+création des comptes alwaysdata et Vercel, premier déploiement, recette en ligne
+(voir `docs/DEPLOIEMENT.md`). L'étape reste donc non cochée.
 
 Les Phases 2 (0.2.0) et 3 (1.0.0) restent au niveau de la liste du `CAHIER_DES_CHARGES.md`
 section 12 : elles seront détaillées étape par étape une fois la Phase 1 terminée.

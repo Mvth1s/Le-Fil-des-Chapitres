@@ -196,13 +196,13 @@ le-fil-des-chapitres/
 
 ## 🗺️ Roadmap
 
-### Phase 1 — MVP `v0.1.0` *(en cours)*
-- [ ] Mise en place du projet et de l'environnement Docker
-- [ ] Schéma de base de données et migrations
-- [ ] API REST complète (webtoons, liste de lecture, genres)
-- [ ] Interface : catalogue, fiche webtoon, liste de lecture
-- [ ] Interface : statistiques basiques
-- [ ] Intégration de la charte graphique
+### Phase 1 : MVP `v0.1.0` *(code livré, mise en ligne à exécuter : voir [Déploiement](docs/DEPLOIEMENT.md))*
+- [x] Mise en place du projet et de l'environnement Docker
+- [x] Schéma de base de données et migrations
+- [x] API REST complète (webtoons, liste de lecture, genres)
+- [x] Interface : catalogue, fiche webtoon, liste de lecture
+- [x] Interface : statistiques basiques
+- [x] Intégration de la charte graphique
 
 ### Phase 2 — Améliorations `v0.2.0`
 - [ ] Import / Export CSV ou JSON
