@@ -112,9 +112,7 @@ function setView(next: 'grid' | 'list') {
   <main class="page">
     <div class="page-header">
       <h1>Catalogue</h1>
-      <NuxtLink to="/catalogue/new">
-        <AppButton variant="outline" size="sm">Ajouter un webtoon</AppButton>
-      </NuxtLink>
+      <AppButton to="/catalogue/new" variant="outline" size="sm">Ajouter un webtoon</AppButton>
     </div>
 
     <p v-if="pending" class="text-secondary">Chargement du catalogue...</p>
@@ -198,6 +196,7 @@ function setView(next: 'grid' | 'list') {
         >
           <AppCard>
             <template #header>
+              <AppCover :src="webtoon.coverUrl" :title="webtoon.title" class="card-cover" />
               <h3>{{ webtoon.title }}</h3>
             </template>
 
@@ -300,6 +299,10 @@ function setView(next: 'grid' | 'list') {
 .card-link:focus-visible :deep(.app-card) {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+.card-cover {
+  margin-bottom: var(--spacing-md);
 }
 
 .genres {

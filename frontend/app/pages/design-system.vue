@@ -29,6 +29,8 @@ const statusOptions = [
         <AppButton variant="outline">Contour</AppButton>
         <AppButton variant="ghost">Discret</AppButton>
         <AppButton variant="primary" disabled>Désactivé</AppButton>
+        <AppButton to="/catalogue" variant="outline">Lien interne</AppButton>
+        <AppButton href="https://example.org" variant="ghost">Lien externe</AppButton>
       </div>
     </section>
 
@@ -68,6 +70,15 @@ const statusOptions = [
     </section>
 
     <section>
+      <h2>Couverture</h2>
+      <div class="row">
+        <AppCover class="cover-demo" src="/logo-icon.png" title="Le Fil des Chapitres" />
+        <AppCover class="cover-demo" title="Tower of God" />
+        <AppCover class="cover-demo" src="data:image/png;base64,invalide" title="Image cassée" />
+      </div>
+    </section>
+
+    <section>
       <h2>Modale</h2>
       <AppButton variant="outline" @click="modalOpen = true">Ouvrir la modale</AppButton>
       <AppModal v-model:open="modalOpen">
@@ -103,6 +114,10 @@ const statusOptions = [
 
 section {
   margin-top: var(--spacing-xl);
+}
+
+.cover-demo {
+  width: 140px;
 }
 
 .row {

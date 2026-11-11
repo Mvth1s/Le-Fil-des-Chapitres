@@ -140,7 +140,8 @@ const {
 
 .rated-list__rating {
   font-weight: 700;
-  color: var(--color-primary);
+  /* --color-primary (3.0:1) ne suffit pas a 16px gras. */
+  color: var(--color-text);
 }
 
 .error-box {

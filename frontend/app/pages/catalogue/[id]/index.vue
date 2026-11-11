@@ -112,28 +112,33 @@ async function handleAddToList() {
       <div class="article-header">
         <h1>{{ webtoon.title }}</h1>
         <div class="article-actions">
-          <NuxtLink :to="`/catalogue/${webtoonId}/edit`">
-            <AppButton variant="outline" size="sm">Modifier</AppButton>
-          </NuxtLink>
+          <AppButton :to="`/catalogue/${webtoonId}/edit`" variant="outline" size="sm">
+            Modifier
+          </AppButton>
           <AppButton variant="ghost" size="sm" :disabled="deleting" @click="confirmOpen = true">
             Supprimer
           </AppButton>
         </div>
       </div>
-      <p class="text-secondary">{{ webtoon.author }}</p>
+      <div class="article-body">
+        <AppCover :src="webtoon.coverUrl" :title="webtoon.title" class="article-cover" />
+        <div class="article-info">
+          <p class="text-secondary">{{ webtoon.author }}</p>
 
-      <div v-if="webtoon.genres.length > 0" class="genres">
-        <AppBadge v-for="genre in webtoon.genres" :key="genre.id">{{ genre.name }}</AppBadge>
+          <div v-if="webtoon.genres.length > 0" class="genres">
+            <AppBadge v-for="genre in webtoon.genres" :key="genre.id">{{ genre.name }}</AppBadge>
+          </div>
+
+          <p v-if="webtoon.description" class="description">{{ webtoon.description }}</p>
+          <p v-if="webtoon.chaptersTotal" class="text-secondary">
+            {{ webtoon.chaptersTotal }} chapitres au total
+          </p>
+
+          <AppButton v-if="webtoon.link" :href="webtoon.link" variant="outline">
+            Lire ce webtoon
+          </AppButton>
+        </div>
       </div>
-
-      <p v-if="webtoon.description">{{ webtoon.description }}</p>
-      <p v-if="webtoon.chaptersTotal" class="text-secondary">
-        {{ webtoon.chaptersTotal }} chapitres au total
-      </p>
-
-      <a v-if="webtoon.link" :href="webtoon.link" target="_blank" rel="noopener">
-        <AppButton variant="outline">Lire ce webtoon</AppButton>
-      </a>
 
       <section class="my-list" aria-labelledby="my-list-title">
         <h2 id="my-list-title">Ma liste</h2>
@@ -211,6 +216,33 @@ article {
 .article-actions {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+/* Couverture a gauche des informations, puis au-dessus quand la place manque
+   (flex-wrap : pas de media query). */
+.article-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+}
+
+.article-cover {
+  flex: 0 0 180px;
+}
+
+.article-info {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.article-info > p:first-child {
+  margin-top: 0;
+}
+
+.description {
+  overflow-wrap: anywhere;
 }
 
 .genres {

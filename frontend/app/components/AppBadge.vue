@@ -20,7 +20,8 @@ withDefaults(
 
 <style scoped>
 /*
- * A 12-13px (taille imposee par la charte pour les badges), les couleurs
+ * 14px : minimum du projet (CLAUDE.md section 8, CDC "Accessibilite"), qui
+ * l'emporte sur les 12-13px du tableau typographique du CDC. Les couleurs
  * pastel de la palette n'atteignent pas 4.5:1 en texte plein (mesure ~2.3
  * a 3.8:1 selon la couleur, voir resume de l'etape 5) et ce texte est trop
  * petit pour beneficier du seuil "grand texte" (3:1). La couleur du statut
@@ -33,7 +34,7 @@ withDefaults(
   gap: var(--spacing-xs);
   font-family: var(--font-body);
   font-style: italic;
-  font-size: 13px;
+  font-size: 14px;
   padding: 2px var(--spacing-sm);
   border-radius: 999px;
   color: var(--color-text);

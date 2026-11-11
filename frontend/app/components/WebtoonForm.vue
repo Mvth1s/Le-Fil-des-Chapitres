@@ -177,5 +177,15 @@ function handleSubmit() {
   align-items: center;
   gap: var(--spacing-xs);
   font-size: 14px;
+  /* Cible tactile >= 24px (WCAG 2.5.8) : le label entier coche la case. */
+  min-height: 24px;
+  cursor: pointer;
+}
+
+.webtoon-form__genre input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-primary);
 }
 </style>
