@@ -1,5 +1,5 @@
 import vine from '@vinejs/vine'
-import { HTTP_URL } from '#validators/url_options'
+import { HTTP_URL, HTTPS_URL } from '#validators/url_options'
 
 /**
  * Regle metier CAHIER_DES_CHARGES.md US-01 : titre et auteur obligatoires,
@@ -24,7 +24,7 @@ export const createWebtoonValidator = vine.compile(
       }),
     author: vine.string().trim().minLength(1),
     description: vine.string().trim().optional(),
-    coverUrl: vine.string().trim().url(HTTP_URL).optional(),
+    coverUrl: vine.string().trim().url(HTTPS_URL).optional(),
     chaptersTotal: vine.number().positive().optional(),
     link: vine.string().trim().url(HTTP_URL).optional(),
     genreIds: vine.array(vine.string().uuid()).optional(),

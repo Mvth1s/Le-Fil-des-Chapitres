@@ -1,23 +1,80 @@
-# Mises a jour automatiques des dependances : une PR par mise a jour,
-# chaque semaine, en nombre limite pour rester relisible.
+# Mises a jour automatiques des dependances : une PR groupee par mois et par
+# dossier, ouverte sur dev pour passer par la CI avant d'arriver sur main.
+# Mises a jour de securite : actives depuis le 2026-11-11 (alertes de
+# vulnerabilite et Dependabot security updates, reglage du depot). Avec
+# target-branch, elles ne suivent pas les regles de ce fichier et ouvrent
+# leurs PR sur main. Une telle PR se traite en hotfix : CI verte, fusion en
+# squash, puis resynchronisation main -> dev. L'ouverture de la PR ne
+# declenche aucun deploiement, seule la fusion sur main le fait.
 version: 2
 updates:
+  # Backend : mineures et correctifs regroupes, majeures ignorees (a faire a
+  # la main, elles peuvent casser l'API d'AdonisJS ou de Lucid).
   - package-ecosystem: npm
     directory: /backend
+    target-branch: dev
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    # Laisse 14 jours a une version publiee pour etre retiree si elle est
+    # compromise ou boguee avant de la proposer.
+    cooldown:
+      default-days: 14
+    groups:
+      backend-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+    open-pull-requests-limit: 2
 
+  # Frontend : meme politique que le backend (majeures de Nuxt a la main).
   - package-ecosystem: npm
     directory: /frontend
+    target-branch: dev
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    cooldown:
+      default-days: 14
+    groups:
+      frontend-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+      # vue-tsc 3.3.12 a 3.3.14 signale de fausses erreurs TS2339 sur les
+      # handlers inline de design-system.vue : version epinglee en exact a
+      # 3.3.11, a reevaluer pour 3.4.
+      - dependency-name: "vue-tsc"
+        versions: [">=3.3.12 <3.4.0"]
+    open-pull-requests-limit: 2
 
   # Actions GitHub epinglees par SHA dans .github/workflows : Dependabot met
-  # a jour le SHA et le tag en commentaire.
+  # a jour le SHA et le tag en commentaire. Les majeures sont acceptees mais
+  # regroupees dans la meme PR mensuelle. Seul default-days est pris en charge
+  # pour cet ecosysteme (pas de delai par niveau semver).
   - package-ecosystem: github-actions
     directory: /
+    target-branch: dev
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    cooldown:
+      default-days: 14
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - major
+          - minor
+          - patch
+    open-pull-requests-limit: 2

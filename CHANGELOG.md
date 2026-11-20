@@ -6,6 +6,32 @@ Versionnage : [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-20
+
+Mises à jour de dépendances, PostgreSQL 17 et ajustements.
+
+### Ajouté
+
+- `GET /api/stats` : champ additif `distinctGenres` (nombre de genres distincts dans la liste de lecture).
+- Page statistiques : tuile « Genres explorés » à la place de « En cours » (retour aux 4 tuiles du UI kit).
+
+### Modifié
+
+- PostgreSQL 16 -> 17 en local et en CI (`docker-compose.yml`, `ci.yml`). La base alwaysdata reste en 16 (migration manuelle sur la plateforme, hors de cette version) : écart local/CI 17 et production 16. Le volume local existant en 16 est illisible en 17 et doit être recréé (détruit les données locales) : `docker compose down && docker volume rm le-fil-des-chapitres_postgres_data && docker compose up -d`.
+- `coverUrl` n'accepte plus que `https://` (création et mise à jour, `422` sinon) ; `link` est inchangé. Un `PUT` renvoyant un ancien `coverUrl` en http est rejeté ; si `coverUrl` est omis, la valeur en base est inchangée. Aucune ligne http en local, production non vérifiée.
+- `happy-dom` 21.0.4 (alerte de sécurité, #55).
+- Backend : `pg` 8.23.1, `@types/luxon` 3.7.6, `typescript` 6.0 (aligné sur le frontend, borne `~6.0` car typescript-eslint exige une version inférieure à 6.1).
+- Frontend : `typescript` borné à `~6.0`, `vue-tsc` épinglé en version exacte 3.3.11.
+- CI : `actions/checkout` v7.0.1 et `actions/setup-node` v7.1.0, toujours épinglées par SHA.
+
+### Non retenu
+
+- Avis picomatch GHSA-fc5q-39xc-vjpf : retiré par GitHub le 2026-11-18 ; il faisait échouer `deps-audit` sur des PR Dependabot (#56 à #59, fermées).
+- `typescript` 7.0 : pas d'API programmatique stable, `vue-tsc` et typescript-eslint incompatibles. À reprendre avec la 7.1.
+- `@types/node` 26 : les types suivent le runtime Node.js 24.
+- `vitest` 5 (et `@nuxt/test-utils` 4.4 qui l'accepte) : publiés depuis moins de 14 jours ; montée à faire à la main plus tard, Dependabot ignorant les majeures npm.
+- `vue-tsc` 3.3.12 à 3.3.14 : faux positifs TS2339 sur les handlers inline de `design-system.vue`. Version épinglée en exact 3.3.11 ; Dependabot ignore les versions >=3.3.12 <3.4.0.
+
 ## [0.1.1] - 2026-11-11
 
 Refonte visuelle alignée sur le UI kit Claude Design.
@@ -77,6 +103,7 @@ Première version (Phase 1, MVP). Les PR #1 et #2 portent les ressources du proj
 - Socle de sécurité : secrets hors dépôt, trois rôles PostgreSQL (`_owner`, `_app`, `_ro`) (#18).
 - Proxy Nitro avec `X-Api-Key`, HTTP Basic Auth sur le frontend, `GET /health` public (#25).
 
-[Unreleased]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/releases/tag/v0.1.0

@@ -11,7 +11,7 @@
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:17
     restart: unless-stopped
     environment:
       # Superuser, reserve a l'initialisation et a l'administration.

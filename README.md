@@ -6,11 +6,11 @@
 
 **Suivez, organisez et gérez votre lecture de webtoons.**
 
-[![Version](https://img.shields.io/badge/version-0.1.1-blue?style=flat-square)](https://github.com/Mvth1s/Le-Fil-des-Chapitres)
+[![Version](https://img.shields.io/badge/version-0.1.2-blue?style=flat-square)](https://github.com/Mvth1s/Le-Fil-des-Chapitres)
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-green?style=flat-square)](LICENSE)
 [![Nuxt 4](https://img.shields.io/badge/Nuxt-4.x-00DC82?style=flat-square&logo=nuxt.js)](https://nuxt.com)
 [![AdonisJS](https://img.shields.io/badge/AdonisJS-7.x-5A45FF?style=flat-square)](https://adonisjs.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.x-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker)](https://www.docker.com)
 
 </div>
@@ -44,7 +44,7 @@
 | Frontend | [Nuxt 4](https://nuxt.com) (Vue 3 + TypeScript) |
 | Backend | [AdonisJS 7](https://adonisjs.com) (Node.js 24 + TypeScript) |
 | ORM | [Lucid](https://lucid.adonisjs.com) (natif AdonisJS) |
-| Base de données | [PostgreSQL 16](https://www.postgresql.org) |
+| Base de données | [PostgreSQL 17](https://www.postgresql.org) |
 | Conteneurisation | [Docker](https://www.docker.com) + Docker Compose |
 
 ---
@@ -196,13 +196,18 @@ le-fil-des-chapitres/
 
 ## 🗺️ Roadmap
 
-### Phase 1 : MVP `v0.1.0` *(code livré, mise en ligne à exécuter : voir [Déploiement](docs/DEPLOIEMENT.md))*
+### Phase 1 : MVP *(livrée : `v0.1.0` fonctionnel, puis `v0.1.1` refonte visuelle)*
 - [x] Mise en place du projet et de l'environnement Docker
 - [x] Schéma de base de données et migrations
 - [x] API REST complète (webtoons, liste de lecture, genres)
 - [x] Interface : catalogue, fiche webtoon, liste de lecture
 - [x] Interface : statistiques basiques
 - [x] Intégration de la charte graphique
+- [ ] Mise en ligne (étape 11) : voir [Déploiement](docs/DEPLOIEMENT.md)
+
+Deux petits points restent ouverts :
+- Tuile « Genres explorés » du UI kit : remplacée par « En cours », car `GET /api/stats` ne renvoie que le top 3 des genres. Il faudrait ajouter un champ à l'API.
+- `cover_url` : le backend accepte `http` et `https`, mais la CSP bloque `http`. À restreindre aux URL `https`.
 
 ### Phase 2 — Améliorations `v0.2.0`
 - [ ] Import / Export CSV ou JSON

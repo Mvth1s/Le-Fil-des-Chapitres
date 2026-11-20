@@ -47,6 +47,7 @@ function makeStats(entries: UserWebtoon[]): Stats {
     totalChaptersRead: entries.reduce((sum, entry) => sum + entry.chaptersRead, 0),
     byStatus,
     topGenres: [],
+    distinctGenres: 0,
     topRated: [],
   }
 }

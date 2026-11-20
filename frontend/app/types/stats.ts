@@ -27,5 +27,6 @@ export interface Stats {
   totalChaptersRead: number
   byStatus: Record<UserWebtoonStatus, number>
   topGenres: StatsTopGenre[]
+  distinctGenres: number
   topRated: StatsTopRatedEntry[]
 }

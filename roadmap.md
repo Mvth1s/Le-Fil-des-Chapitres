@@ -83,7 +83,7 @@ Contenu :
 - Initialisation AdonisJS 7 (Node.js 24) dans `backend/` (starter `api`, Lucid, PostgreSQL)
 - Initialisation Nuxt 4 + TypeScript dans `frontend/`
 - Dockerfile de dev pour chaque service, avec hot reload
-- `docker-compose.yml` à la racine : nuxt (3000), adonis (3333), postgres 16 (5432)
+- `docker-compose.yml` à la racine : nuxt (3000), adonis (3333), postgres 17 (5432)
 - `frontend/.env.example` et `backend/.env.example`
 - `.gitignore` complet (`.env`, `node_modules/`, `build/`, `.nuxt/`, `.output/`)
 
@@ -297,6 +297,17 @@ Terminé quand :
 
 Ce qu'on apprend : déploiement Node.js sur un hébergeur mutualisé, moindre privilège
 PostgreSQL, proxy serveur et secrets d'infrastructure, CI/CD avec GitHub Actions.
+
+---
+
+## Version 0.1.2 - Mises à jour et ajustements
+
+Pas d'étape numérotée : lots fusionnés dans `dev`.
+
+- [x] PostgreSQL 16 -> 17 en local et en CI (la production alwaysdata reste en 16).
+- [x] `GET /api/stats` : champ `distinctGenres` ; tuile « Genres explorés » sur la page statistiques.
+- [x] `coverUrl` : https uniquement (création et mise à jour).
+- [x] Mises à jour de dépendances (voir `CHANGELOG.md`).
 
 ---
 
