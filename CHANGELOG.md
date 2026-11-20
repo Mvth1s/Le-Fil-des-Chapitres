@@ -17,7 +17,7 @@ Mises à jour de dépendances, PostgreSQL 17 et ajustements.
 
 ### Modifié
 
-- PostgreSQL 16 -> 17 en local et en CI (`docker-compose.yml`, `ci.yml`). La base alwaysdata reste en 16 (migration manuelle sur la plateforme, hors de cette version) : écart local/CI 17 et production 16. Le volume local existant en 16 est illisible en 17 et doit être recréé (détruit les données locales) : `docker compose down && docker volume rm le-fil-des-chapitres_postgres_data && docker compose up -d`.
+- PostgreSQL 16 -> 17 en local et en CI (`docker-compose.yml`, `ci.yml`). La base alwaysdata est déjà en 17 : local, CI et production sont alignés. Le volume local existant en 16 est illisible en 17 et doit être recréé (détruit les données locales) : `docker compose down && docker volume rm le-fil-des-chapitres_postgres_data && docker compose up -d`.
 - `coverUrl` n'accepte plus que `https://` (création et mise à jour, `422` sinon) ; `link` est inchangé. Un `PUT` renvoyant un ancien `coverUrl` en http est rejeté ; si `coverUrl` est omis, la valeur en base est inchangée. Aucune ligne http en local, production non vérifiée.
 - `happy-dom` 21.0.4 (alerte de sécurité, #55).
 - Backend : `pg` 8.23.1, `@types/luxon` 3.7.6, `typescript` 6.0 (aligné sur le frontend, borne `~6.0` car typescript-eslint exige une version inférieure à 6.1).

@@ -304,7 +304,7 @@ PostgreSQL, proxy serveur et secrets d'infrastructure, CI/CD avec GitHub Actions
 
 Pas d'étape numérotée : lots fusionnés dans `dev`.
 
-- [x] PostgreSQL 16 -> 17 en local et en CI (la production alwaysdata reste en 16).
+- [x] PostgreSQL 16 -> 17 en local et en CI (la base alwaysdata est déjà en 17).
 - [x] `GET /api/stats` : champ `distinctGenres` ; tuile « Genres explorés » sur la page statistiques.
 - [x] `coverUrl` : https uniquement (création et mise à jour).
 - [x] Mises à jour de dépendances (voir `CHANGELOG.md`).
