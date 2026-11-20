@@ -351,8 +351,11 @@ Si le site n'a jamais démarré, le redémarrage par l'API le lance. Sinon, dans
 curl -i https://<compte>.alwaysdata.net/health
 ```
 
-Attendu : `200` et `{"status":"ok"}`. Un `503` avec `{"status":"error"}` signale une
-base injoignable (variables `DB_*` du site).
+Attendu : `200` et `{"status":"ok"}`. La route exécute `SELECT 1 FROM genres LIMIT 1`
+avec `_app` : elle vérifie la connexion, l'existence de la table `genres` et le droit
+`SELECT`. Une table vide reste valide. Un `503` avec `{"status":"error"}` (sans détail)
+signale une base injoignable (variables `DB_*` du site) ou un schéma et des droits absents
+(tables non migrées, `GRANT` de `_app` réinitialisés).
 
 ### 8.2 Vérifier que `_app` ne peut pas créer de table
 
@@ -456,7 +459,7 @@ Symptômes courants :
 | Symptôme | Cause probable | Action |
 |---|---|---|
 | Workflow vert mais rien déployé | Secret ou variable manquant | Lire le résumé du run, compléter la section 6 |
-| `/health` en 503 | Variables `DB_*` du site erronées | Corriger dans Environment (le site redémarre) |
+| `/health` en 503 | Variables `DB_*` erronées, tables non migrées ou `GRANT` de `_app` réinitialisés | Corriger `DB_*` dans Environment (le site redémarre), ou relancer `gh workflow run deploy-backend.yml --ref main` (rejoue migrations et grants) |
 | Écritures en erreur 500 après une action dans l'interface | Droits de `_app` réinitialisés | `gh workflow run deploy-backend.yml --ref main` |
 | Backend tué sans message | Dépassement des 256 Mo de RAM | Revoir `NODE_OPTIONS` (hypothèse H1) |
 | Vercel 500 sur toutes les pages | Variable `NUXT_*` manquante | Compléter les variables Production, redéployer |

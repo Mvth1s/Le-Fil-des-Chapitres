@@ -6,6 +6,10 @@ Versionnage : [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Corrigé
+
+- `GET /health` vérifie l'accès à la table `genres` (`SELECT 1 FROM genres LIMIT 1` avec `_app`) et non plus seulement la connexion. Réponses inchangées : `200` ou `503`, sans détail.
+
 ## [0.1.2] - 2026-11-20
 
 Mises à jour de dépendances, PostgreSQL 17 et ajustements.
