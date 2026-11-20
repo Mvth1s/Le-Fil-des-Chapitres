@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { test } from '@japa/runner'
+import db from '@adonisjs/lucid/services/db'
 import env from '#start/env'
 
 /*
@@ -83,5 +84,50 @@ test.group('Health check', () => {
     response.assertStatus(200)
     // deepEqual on the whole body: no version or any other field leaks.
     assert.deepEqual(response.body(), { status: 'ok' })
+  })
+
+  test('GET /health lit reellement la table genres', async ({ client, assert, cleanup }) => {
+    const original = db.rawQuery
+    const queries: string[] = []
+    // Spy: records the SQL sent by the route, then delegates to the real database.
+    db.rawQuery = ((sql: string, ...rest: unknown[]) => {
+      queries.push(sql)
+      return (original as (...a: unknown[]) => unknown).call(db, sql, ...rest)
+    }) as typeof db.rawQuery
+    cleanup(() => {
+      db.rawQuery = original
+    })
+
+    const response = await client.get('/health')
+
+    response.assertStatus(200)
+    assert.deepEqual(response.body(), { status: 'ok' })
+    assert.isTrue(queries.some((sql) => /from\s+genres/i.test(sql)))
+    // The same table is really readable by _app and seeded.
+    const [{ count }] = await db.from('genres').count('* as count')
+    assert.equal(Number(count), 14)
+  })
+
+  test('GET /health renvoie 503 sans detail quand la table est illisible', async ({
+    client,
+    assert,
+    cleanup,
+  }) => {
+    const original = db.rawQuery
+    // Double: simulates what Postgres says for a missing table. A real DROP would
+    // need _owner and would break the shared test database.
+    db.rawQuery = (() =>
+      Promise.reject(
+        new Error('relation "genres" does not exist')
+      )) as unknown as typeof db.rawQuery
+    cleanup(() => {
+      db.rawQuery = original
+    })
+
+    const response = await client.get('/health')
+
+    response.assertStatus(503)
+    assert.deepEqual(response.body(), { status: 'error' })
+    assert.notMatch(response.text(), /genres|relation|exist|stack|\bat\b|\.ts|\.js/i)
   })
 })
