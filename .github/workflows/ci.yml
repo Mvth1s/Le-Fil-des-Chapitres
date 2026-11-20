@@ -166,7 +166,7 @@ jobs:
             -e DB_OWNER_PASSWORD -e DB_APP_PASSWORD -e DB_RO_PASSWORD \
             -v "$GITHUB_WORKSPACE/docker/postgres/init:/docker-entrypoint-initdb.d:ro" \
             -v "$GITHUB_WORKSPACE/backend/database/sql/grants.sql:/sql/grants.sql:ro" \
-            postgres:16
+            postgres:17
       - name: Wait for Postgres and database
         # TCP (-h 127.0.0.1) : ne repond qu'apres la fin des scripts d'init.
         # La connexion psql en lfdc_app verifie la base ET le role.

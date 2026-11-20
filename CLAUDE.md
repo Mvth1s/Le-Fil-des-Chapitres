@@ -25,7 +25,7 @@ Licence MIT. Version courante : 0.1.1.
 | Backend | AdonisJS | 7.x |
 | ORM | Lucid | 22.x |
 | Runtime | Node.js | 24 LTS |
-| Base de données | PostgreSQL | 16.x |
+| Base de données | PostgreSQL | 17.x |
 | Langage | TypeScript | 5.x |
 | Dev local | Docker + Docker Compose | - |
 
