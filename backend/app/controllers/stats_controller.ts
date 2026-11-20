@@ -39,6 +39,12 @@ export default class StatsController {
       .orderBy('count', 'desc')
       .limit(3)
 
+    const [distinctRow] = await db
+      .from('user_webtoons')
+      .where('user_webtoons.user_id', user.id)
+      .join('webtoon_genres', 'webtoon_genres.webtoon_id', 'user_webtoons.webtoon_id')
+      .countDistinct('webtoon_genres.genre_id as total')
+
     const topRated = await UserWebtoon.query()
       .where('userId', user.id)
       .whereNotNull('rating')
@@ -56,6 +62,7 @@ export default class StatsController {
         count: Number(row.count),
       })),
       topRated,
+      distinctGenres: Number(distinctRow.total),
     })
   }
 }

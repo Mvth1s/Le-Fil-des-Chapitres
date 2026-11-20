@@ -60,11 +60,9 @@ const genres = computed(() => (stats.value ? genreBars(stats.value.topGenres) : 
             <dt class="stat__label">Terminés</dt>
             <dd class="stat__value">{{ formatCount(stats.byStatus.completed) }}</dd>
           </div>
-          <!-- "Genres explores" du UI kit : non calculable, GET /api/stats ne
-               renvoie que le top 3 des genres. -->
           <div class="stat">
-            <dt class="stat__label">En cours</dt>
-            <dd class="stat__value">{{ formatCount(stats.byStatus.reading) }}</dd>
+            <dt class="stat__label">Genres explorés</dt>
+            <dd class="stat__value">{{ formatCount(stats.distinctGenres ?? 0) }}</dd>
           </div>
         </dl>
       </section>
