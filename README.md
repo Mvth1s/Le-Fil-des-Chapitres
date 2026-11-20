@@ -10,7 +10,7 @@
 [![Licence MIT](https://img.shields.io/badge/licence-MIT-green?style=flat-square)](LICENSE)
 [![Nuxt 4](https://img.shields.io/badge/Nuxt-4.x-00DC82?style=flat-square&logo=nuxt.js)](https://nuxt.com)
 [![AdonisJS](https://img.shields.io/badge/AdonisJS-7.x-5A45FF?style=flat-square)](https://adonisjs.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.x-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.x-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker)](https://www.docker.com)
 
 </div>
@@ -44,7 +44,7 @@
 | Frontend | [Nuxt 4](https://nuxt.com) (Vue 3 + TypeScript) |
 | Backend | [AdonisJS 7](https://adonisjs.com) (Node.js 24 + TypeScript) |
 | ORM | [Lucid](https://lucid.adonisjs.com) (natif AdonisJS) |
-| Base de données | [PostgreSQL 16](https://www.postgresql.org) |
+| Base de données | [PostgreSQL 17](https://www.postgresql.org) |
 | Conteneurisation | [Docker](https://www.docker.com) + Docker Compose |
 
 ---

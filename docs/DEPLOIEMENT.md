@@ -11,7 +11,7 @@ Dans tout le guide, `<compte>` est le nom de votre compte alwaysdata.
 | Élément | Plateforme | Comment il est livré |
 |---|---|---|
 | Backend AdonisJS | Site Node.js alwaysdata (Free) | Workflow `.github/workflows/deploy-backend.yml` (build, rsync, migrations, bascule, redémarrage) |
-| Base PostgreSQL 16 | alwaysdata, même compte | Migrations et GRANT rejoués par le workflow |
+| Base PostgreSQL 16 (le local et la CI tournent en 17) | alwaysdata, même compte | Migrations et GRANT rejoués par le workflow |
 | Frontend Nuxt | Vercel (Hobby), région `cdg1` | Intégration Git native de Vercel, branche `main` |
 
 Le navigateur ne parle qu'au frontend. Les requêtes `/api/**` passent par un proxy
@@ -42,7 +42,7 @@ services). Une seule instance tourne, mise en veille après 30 minutes sans requ
 1. Menu **Databases > PostgreSQL**, bouton **Add a database**.
 2. **Name** : le nom complet sera `<compte>_lfdc` (alwaysdata préfixe avec le compte).
    Noter ce nom : c'est `DB_NAME` / `DB_DATABASE`.
-3. **Type** : PostgreSQL, version **16**.
+3. **Type** : PostgreSQL, version **16**. La production reste en 16 alors que le local et la CI sont en 17 (migration de la base alwaysdata à faire à la main, hors de la version 0.1.2).
 4. Valider.
 
 ### 2.2 Créer les trois utilisateurs
