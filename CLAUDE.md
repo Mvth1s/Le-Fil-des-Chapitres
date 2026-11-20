@@ -13,7 +13,7 @@ et une liste de lecture individuelle avec progression, statuts et statistiques.
 Double objectif : outil réellement utilisé au quotidien, et support d'apprentissage de la stack.
 
 **Auteur unique et utilisateur unique :** Mvth1s (développeur junior).
-Licence MIT. Version courante : 0.1.1.
+Licence MIT. Version courante : 0.1.2.
 
 ---
 
