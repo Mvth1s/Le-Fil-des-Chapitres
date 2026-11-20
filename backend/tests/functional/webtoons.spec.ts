@@ -67,4 +67,88 @@ test.group('Webtoons API - protocoles des URL', () => {
       await Webtoon.query().where('title', 'Test protocole https').delete()
     }
   })
+
+  test('POST /api/webtoons refuse un coverUrl en http', async ({ client, assert }) => {
+    const response = await client
+      .post('/api/webtoons')
+      .json({ title: 'Test cover http POST', author: 'Test', coverUrl: 'http://example.com/c.jpg' })
+
+    response.assertStatus(422)
+    assert.include(JSON.stringify(response.body()), 'coverUrl')
+  })
+
+  test('PUT /api/webtoons/:id refuse un coverUrl en http', async ({ client }) => {
+    const webtoon = await Webtoon.create({ title: 'Test cover http PUT', author: 'Test' })
+    try {
+      const response = await client
+        .put(`/api/webtoons/${webtoon.id}`)
+        .json({ title: webtoon.title, author: 'Test', coverUrl: 'http://example.com/c.jpg' })
+
+      response.assertStatus(422)
+    } finally {
+      await webtoon.delete()
+    }
+  })
+
+  test('PUT /api/webtoons/:id accepte un coverUrl en https', async ({ client }) => {
+    const webtoon = await Webtoon.create({ title: 'Test cover https PUT', author: 'Test' })
+    try {
+      const response = await client
+        .put(`/api/webtoons/${webtoon.id}`)
+        .json({ title: webtoon.title, author: 'Test', coverUrl: 'https://example.com/c.jpg' })
+
+      response.assertStatus(200)
+    } finally {
+      await webtoon.delete()
+    }
+  })
+
+  test('POST /api/webtoons accepte un link en http', async ({ client }) => {
+    const title = 'Test link http POST'
+    try {
+      const response = await client
+        .post('/api/webtoons')
+        .json({ title, author: 'Test', link: 'http://example.com/w' })
+
+      response.assertStatus(201)
+    } finally {
+      await Webtoon.query().where('title', title).delete()
+    }
+  })
+
+  test('PUT /api/webtoons/:id accepte un link en http', async ({ client }) => {
+    const webtoon = await Webtoon.create({ title: 'Test link http PUT', author: 'Test' })
+    try {
+      const response = await client
+        .put(`/api/webtoons/${webtoon.id}`)
+        .json({ title: webtoon.title, author: 'Test', link: 'http://example.com/w' })
+
+      response.assertStatus(200)
+    } finally {
+      await webtoon.delete()
+    }
+  })
+
+  test('PUT sans coverUrl laisse intact un cover_url http preexistant', async ({
+    client,
+    assert,
+  }) => {
+    const legacy = 'http://example.com/legacy.jpg'
+    const webtoon = await Webtoon.create({
+      title: 'Test cover legacy',
+      author: 'Test',
+      coverUrl: legacy,
+    })
+    try {
+      const response = await client
+        .put(`/api/webtoons/${webtoon.id}`)
+        .json({ title: webtoon.title, author: 'Autre' })
+
+      response.assertStatus(200)
+      const fresh = await Webtoon.findOrFail(webtoon.id)
+      assert.equal(fresh.coverUrl, legacy)
+    } finally {
+      await webtoon.delete()
+    }
+  })
 })
