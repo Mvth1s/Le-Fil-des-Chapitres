@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import StatsPage from '~/pages/statistiques/index.vue'
 import type { Stats } from '~/types/stats'
+import { formatCount } from '~/utils/home'
 
 function makeStats(overrides: Partial<Stats> = {}): Stats {
   return {
@@ -10,6 +11,7 @@ function makeStats(overrides: Partial<Stats> = {}): Stats {
     totalChaptersRead: 120,
     byStatus: { reading: 2, completed: 1, on_hold: 1, dropped: 0, plan_to_read: 0 },
     topGenres: [],
+    distinctGenres: 3,
     topRated: [],
     ...overrides,
   }
@@ -84,9 +86,36 @@ describe('page statistiques', () => {
       'Titres suivis',
       'Chapitres lus',
       'Terminés',
-      'En cours',
+      'Genres explorés',
     ])
-    expect(wrapper.findAll('dd').map((dd) => dd.text())).toEqual(['4', '120', '1', '2'])
+    expect(wrapper.findAll('dd').map((dd) => dd.text())).toEqual(['4', '120', '1', '3'])
+  })
+
+  it('la tuile "En cours" n\'apparaît plus parmi les chiffres clés', async () => {
+    const wrapper = await mountSuspended(StatsPage)
+    expect(wrapper.findAll('dt').map((dt) => dt.text())).not.toContain('En cours')
+  })
+
+  const genresValue = async () => {
+    const wrapper = await mountSuspended(StatsPage)
+    return wrapper.findAll('dd')[3]!.text()
+  }
+
+  it.each([7, 0])('genres explorés : %i affiché tel quel', async (n) => {
+    state.stats = makeStats({ distinctGenres: n })
+    expect(await genresValue()).toBe(String(n))
+  })
+
+  it('genres explorés : champ absent affiché "0"', async () => {
+    const stats = makeStats() as Partial<Stats>
+    delete stats.distinctGenres
+    state.stats = stats as Stats
+    expect(await genresValue()).toBe('0')
+  })
+
+  it('genres explorés : grande valeur formatée comme formatCount', async () => {
+    state.stats = makeStats({ distinctGenres: 1000 })
+    expect(await genresValue()).toBe(formatCount(1000))
   })
 
   it('5 barres de statut : texte, piste décorative et largeur', async () => {
