@@ -279,7 +279,7 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
                   │ Requêtes SQL (via Lucid ORM)
 ┌─────────────────▼───────────────────────────┐
 │              BASE DE DONNÉES                │
-│               PostgreSQL 16                 │
+│               PostgreSQL 17                 │
 │           Stockage persistant               │
 └─────────────────────────────────────────────┘
 
@@ -295,7 +295,7 @@ L'architecture est pensée dès le départ pour supporter plusieurs utilisateurs
 | **UI** | Vue 3 | 3.x | Composants réactifs |
 | **Backend** | AdonisJS | 7.x (Node.js 24) | Framework Node.js MVC, gestion des routes API |
 | **ORM** | Lucid (natif Adonis) | 22.x | Communication avec PostgreSQL en TypeScript |
-| **Base de données** | PostgreSQL | 16.x | Stockage relationnel des données |
+| **Base de données** | PostgreSQL | 17.x (local et CI) ; production alwaysdata en 16 | Stockage relationnel des données |
 | **Conteneurisation** | Docker + Docker Compose | — | Déploiement et isolation des services |
 | **Langage** | TypeScript | 5.x | Typage statique côté frontend et backend |
 
