@@ -19,13 +19,15 @@ const StatsController = () => import('#controllers/stats_controller')
 /*
 | Public health check (UptimeRobot, alwaysdata), outside /api so it needs
 | no X-Api-Key. Reports only up/down: no version, no error detail.
+| Checks the connection AND SELECT access to the genres table (an empty
+| table is fine), not just that the database answers.
 */
 router.get('/health', async ({ response }) => {
   try {
-    await db.rawQuery('SELECT 1')
+    await db.rawQuery('SELECT 1 FROM genres LIMIT 1')
     return { status: 'ok' }
   } catch (error) {
-    logger.error({ err: error }, 'health check: database unreachable')
+    logger.error({ err: error }, 'health check: database or schema unavailable')
     return response.serviceUnavailable({ status: 'error' })
   }
 })

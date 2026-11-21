@@ -11,7 +11,7 @@ Dans tout le guide, `<compte>` est le nom de votre compte alwaysdata.
 | Élément | Plateforme | Comment il est livré |
 |---|---|---|
 | Backend AdonisJS | Site Node.js alwaysdata (Free) | Workflow `.github/workflows/deploy-backend.yml` (build, rsync, migrations, bascule, redémarrage) |
-| Base PostgreSQL 16 (le local et la CI tournent en 17) | alwaysdata, même compte | Migrations et GRANT rejoués par le workflow |
+| Base PostgreSQL 17 | alwaysdata, même compte | Migrations et GRANT rejoués par le workflow |
 | Frontend Nuxt | Vercel (Hobby), région `cdg1` | Intégration Git native de Vercel, branche `main` |
 
 Le navigateur ne parle qu'au frontend. Les requêtes `/api/**` passent par un proxy
@@ -42,7 +42,7 @@ services). Une seule instance tourne, mise en veille après 30 minutes sans requ
 1. Menu **Databases > PostgreSQL**, bouton **Add a database**.
 2. **Name** : le nom complet sera `<compte>_lfdc` (alwaysdata préfixe avec le compte).
    Noter ce nom : c'est `DB_NAME` / `DB_DATABASE`.
-3. **Type** : PostgreSQL, version **16**. La production reste en 16 alors que le local et la CI sont en 17 (migration de la base alwaysdata à faire à la main, hors de la version 0.1.2).
+3. **Type** : PostgreSQL, version **17** (comme le local et la CI).
 4. Valider.
 
 ### 2.2 Créer les trois utilisateurs
@@ -351,8 +351,11 @@ Si le site n'a jamais démarré, le redémarrage par l'API le lance. Sinon, dans
 curl -i https://<compte>.alwaysdata.net/health
 ```
 
-Attendu : `200` et `{"status":"ok"}`. Un `503` avec `{"status":"error"}` signale une
-base injoignable (variables `DB_*` du site).
+Attendu : `200` et `{"status":"ok"}`. La route exécute `SELECT 1 FROM genres LIMIT 1`
+avec `_app` : elle vérifie la connexion, l'existence de la table `genres` et le droit
+`SELECT`. Une table vide reste valide. Un `503` avec `{"status":"error"}` (sans détail)
+signale une base injoignable (variables `DB_*` du site) ou un schéma et des droits absents
+(tables non migrées, `GRANT` de `_app` réinitialisés).
 
 ### 8.2 Vérifier que `_app` ne peut pas créer de table
 
@@ -456,7 +459,7 @@ Symptômes courants :
 | Symptôme | Cause probable | Action |
 |---|---|---|
 | Workflow vert mais rien déployé | Secret ou variable manquant | Lire le résumé du run, compléter la section 6 |
-| `/health` en 503 | Variables `DB_*` du site erronées | Corriger dans Environment (le site redémarre) |
+| `/health` en 503 | Variables `DB_*` erronées, tables non migrées ou `GRANT` de `_app` réinitialisés | Corriger `DB_*` dans Environment (le site redémarre), ou relancer `gh workflow run deploy-backend.yml --ref main` (rejoue migrations et grants) |
 | Écritures en erreur 500 après une action dans l'interface | Droits de `_app` réinitialisés | `gh workflow run deploy-backend.yml --ref main` |
 | Backend tué sans message | Dépassement des 256 Mo de RAM | Revoir `NODE_OPTIONS` (hypothèse H1) |
 | Vercel 500 sur toutes les pages | Variable `NUXT_*` manquante | Compléter les variables Production, redéployer |

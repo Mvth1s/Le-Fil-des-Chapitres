@@ -23,6 +23,9 @@ jobs:
   # meme sur une PR "doc only" (CLAUDE.md, roadmap.md...) : c'est ce qui
   # permet au workflow de rapporter un statut meme quand tous les jobs
   # suivants sont skippes, necessaire pour un required status check fiable.
+  # Le backend est aussi declenche par docker-compose.yml, docker/ et les
+  # workflows : ils definissent son environnement (PostgreSQL, CI), un
+  # changement ici doit relancer ses checks, tests et build.
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -37,7 +40,7 @@ jobs:
         run: |
           CHANGED=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}")
           echo "$CHANGED"
-          if echo "$CHANGED" | grep -q '^backend/'; then
+          if echo "$CHANGED" | grep -qE '^(backend/|docker-compose\.yml$|docker/|\.github/workflows/)'; then
             echo "backend=true" >> "$GITHUB_OUTPUT"
           else
             echo "backend=false" >> "$GITHUB_OUTPUT"

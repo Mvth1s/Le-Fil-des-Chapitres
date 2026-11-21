@@ -6,6 +6,12 @@ Versionnage : [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-21
+
+### Corrigé
+
+- `GET /health` vérifie l'accès à la table `genres` (`SELECT 1 FROM genres LIMIT 1` avec `_app`) et non plus seulement la connexion. Réponses inchangées : `200` ou `503`, sans détail.
+
 ## [0.1.2] - 2026-11-20
 
 Mises à jour de dépendances, PostgreSQL 17 et ajustements.
@@ -17,7 +23,7 @@ Mises à jour de dépendances, PostgreSQL 17 et ajustements.
 
 ### Modifié
 
-- PostgreSQL 16 -> 17 en local et en CI (`docker-compose.yml`, `ci.yml`). La base alwaysdata reste en 16 (migration manuelle sur la plateforme, hors de cette version) : écart local/CI 17 et production 16. Le volume local existant en 16 est illisible en 17 et doit être recréé (détruit les données locales) : `docker compose down && docker volume rm le-fil-des-chapitres_postgres_data && docker compose up -d`.
+- PostgreSQL 16 -> 17 en local et en CI (`docker-compose.yml`, `ci.yml`). La base alwaysdata est déjà en 17 : local, CI et production sont alignés. Le volume local existant en 16 est illisible en 17 et doit être recréé (détruit les données locales) : `docker compose down && docker volume rm le-fil-des-chapitres_postgres_data && docker compose up -d`.
 - `coverUrl` n'accepte plus que `https://` (création et mise à jour, `422` sinon) ; `link` est inchangé. Un `PUT` renvoyant un ancien `coverUrl` en http est rejeté ; si `coverUrl` est omis, la valeur en base est inchangée. Aucune ligne http en local, production non vérifiée.
 - `happy-dom` 21.0.4 (alerte de sécurité, #55).
 - Backend : `pg` 8.23.1, `@types/luxon` 3.7.6, `typescript` 6.0 (aligné sur le frontend, borne `~6.0` car typescript-eslint exige une version inférieure à 6.1).
@@ -103,7 +109,8 @@ Première version (Phase 1, MVP). Les PR #1 et #2 portent les ressources du proj
 - Socle de sécurité : secrets hors dépôt, trois rôles PostgreSQL (`_owner`, `_app`, `_ro`) (#18).
 - Proxy Nitro avec `X-Api-Key`, HTTP Basic Auth sur le frontend, `GET /health` public (#25).
 
-[Unreleased]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/releases/tag/v0.1.0
