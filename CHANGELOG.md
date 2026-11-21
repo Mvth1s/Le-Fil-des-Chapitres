@@ -6,6 +6,8 @@ Versionnage : [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-21
+
 ### Corrigé
 
 - `GET /health` vérifie l'accès à la table `genres` (`SELECT 1 FROM genres LIMIT 1` avec `_app`) et non plus seulement la connexion. Réponses inchangées : `200` ou `503`, sans détail.
@@ -107,7 +109,8 @@ Première version (Phase 1, MVP). Les PR #1 et #2 portent les ressources du proj
 - Socle de sécurité : secrets hors dépôt, trois rôles PostgreSQL (`_owner`, `_app`, `_ro`) (#18).
 - Proxy Nitro avec `X-Api-Key`, HTTP Basic Auth sur le frontend, `GET /health` public (#25).
 
-[Unreleased]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Mvth1s/Le-Fil-des-Chapitres/releases/tag/v0.1.0
